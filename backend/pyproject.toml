@@ -1,0 +1,40 @@
+[project]
+name = "battle-cards-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Myagkov Maxim"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.127.0,<0.128.0)",
+    "uvicorn[standard] (>=0.40.0,<0.41.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "sqlalchemy[asyncio] (>=2.0.45,<3.0.0)",
+    "alembic (>=1.17.2,<2.0.0)",
+    "psycopg[binary] (>=3.3.2,<4.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
+    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "bcrypt (>=5.0.0,<6.0.0)",
+    "redis (>=7.1.0,<8.0.0)",
+    "colorama (>=0.4.6,<0.5.0)",
+    "fore (>=0.1.8,<0.2.0)",
+    "style (>=1.1.6,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pyright (>=1.1.407,<2.0.0)",
+    "black (>=25.12.0,<26.0.0)",
+    "isort (>=7.0.0,<8.0.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
