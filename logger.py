@@ -28,5 +28,8 @@ def create_logger():
     game_logger.handlers.clear()
     game_logger.addHandler(handler)
     
+    return game_logger
     
+GLOG = create_logger()
+
     
