@@ -31,7 +31,7 @@ def upgrade() -> None:
     sa.Column('patronymic', sa.String(length=64), nullable=True),
     sa.Column('age', sa.SmallInteger(), nullable=True),
     sa.Column('language', sa.String(length=32), server_default='RU', nullable=False),
-    sa.Column('type', sa.String(length=32), nullable=False),
+    sa.Column('user_type', sa.String(length=32), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_by', sa.String(length=64), nullable=False),

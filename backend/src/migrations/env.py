@@ -8,7 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from backend.db_connection import ADB_URL
-from backend.db_mixins import BaseModel
+from backend.db_mixins import BaseSQLModel
 import backend.src.infrastructure.models
 
 # this is the Alembic Config object, which provides
@@ -26,7 +26,7 @@ config.set_main_option("sqlalchemy.url", ADB_URL)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = BaseModel.metadata
+target_metadata = BaseSQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

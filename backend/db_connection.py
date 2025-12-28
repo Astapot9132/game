@@ -44,4 +44,10 @@ SDB_ENGINE = create_async_engine(
 script_session = async_sessionmaker(SDB_ENGINE, class_=AsyncSession, expire_on_commit=False)
 
 
-
+async def get_admin_session():
+    async with admin_session() as session:
+        yield session
+        
+async def get_script_session():
+    async with script_session() as session:
+        yield session
