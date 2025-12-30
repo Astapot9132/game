@@ -1,17 +1,18 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+from dependency_injector.wiring import Provide
+from fastapi import FastAPI, Depends
 
-from backend.di_container import container
+from backend.di_container import container, Container
 from backend.src.app.api.auth import auth_router
+from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """НЕ ЗАБУДЬТЕ ВНЕСТИ СЮДА СВОЙ РОУТЕР, ИНАЧЕ ПРИ НАЛИЧИИ ТАМ СЕРВИСА ИЗ КОНТЕЙНЕРА ОН НЕ ЗАПУСТИТСЯ"""
-    container.wire(modules=["app.api.auth"])
+    container.wire(modules=["backend.src.app.api.auth"])
     GLOG.info("Контейнер настроен (wire)")
 
     yield
