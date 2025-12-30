@@ -1,3 +1,4 @@
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +13,7 @@ auth_router = APIRouter(prefix="/auth")
 
 
 @auth_router.post('/login', response_model=TokenAuthResponse)
-async def login(data: LoginScheme, uow: UnitOfWork = Depends(container.script_uow)):
+async def login(data: LoginScheme, uow: UnitOfWork = Depends(Provide[container.script_uow])):
     user = await uow.user_repository.get_by_login(data.login)
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail='Ошибка авторизации')
