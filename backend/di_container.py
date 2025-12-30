@@ -8,11 +8,18 @@ from backend.src.modules.shared.unit_of_work import UnitOfWork
 class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(modules=["app.api.auth"])
 
-    admin_session = providers.Resource(
+    admin_sessionmaker = providers.Singleton(
         async_sessionmaker, bind=ADB_ENGINE, class_=AsyncSession, expire_on_commit=False
     )
-    script_session = providers.Resource(
+    script_sessionmaker = providers.Singleton(
         async_sessionmaker, bind=SDB_ENGINE, class_=AsyncSession, expire_on_commit=False
+    )
+
+    admin_session = providers.Resource(
+        admin_sessionmaker
+    )
+    script_session = providers.Resource(
+        script_sessionmaker
     )
 
 
