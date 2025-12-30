@@ -25,6 +25,7 @@ def create_logger():
     handler.setFormatter(formatter)
     
     game_logger = logging.getLogger("battle_cards")
+    game_logger.setLevel(logging.INFO)
     game_logger.handlers.clear()
     game_logger.addHandler(handler)
     
