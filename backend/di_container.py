@@ -13,6 +13,7 @@ async def script_session():
     session_maker = container.script_sessionmaker()
     async with session_maker() as session:
         yield session
+
         
 @providers.Factory
 @asynccontextmanager
@@ -29,16 +30,17 @@ class Container(containers.DeclarativeContainer):
     admin_engine = providers.Singleton(
         create_async_engine,
         url=ADB_URL,
-        echo=True
+        echo=True,
+        pool_pre_ping=True
     )
 
     script_engine = providers.Singleton(
         create_async_engine,
         url=SDB_URL,
-        echo=True
+        echo=True,
+        pool_pre_ping=True
     )
 
-    # Sessionmakers используют engine из фабрик
     admin_sessionmaker = providers.Singleton(
         async_sessionmaker,
         bind=admin_engine,
@@ -50,7 +52,8 @@ class Container(containers.DeclarativeContainer):
         async_sessionmaker,
         bind=script_engine,
         class_=AsyncSession,
-        expire_on_commit=False
+        expire_on_commit=False,
+        
     )
 
     admin_uow = providers.Factory(UnitOfWork, session=admin_session)
