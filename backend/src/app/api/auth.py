@@ -1,3 +1,5 @@
+import asyncio
+
 from dependency_injector.wiring import Provide, inject, Closing
 from fastapi import APIRouter, HTTPException, Depends
 
@@ -11,6 +13,8 @@ auth_router = APIRouter(prefix="/auth")
 @auth_router.get("/health", tags=["health"])
 @inject
 async def health_check(uow: UnitOfWork = Depends(Closing[Provide[Container.script_uow]])):
+    print(uow.user_repository.session)
+    await asyncio.sleep(5)
     print(uow.user_repository.session)
     return {"status": "ok"}
 
