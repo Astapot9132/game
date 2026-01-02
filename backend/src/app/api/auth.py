@@ -1,4 +1,4 @@
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import Provide, inject, Closing
 from fastapi import APIRouter, HTTPException, Depends
 
 from backend.di_container import Container
@@ -10,16 +10,12 @@ auth_router = APIRouter(prefix="/auth")
 
 @auth_router.get("/health", tags=["health"])
 @inject
-async def health_check(uow: UnitOfWork = Depends(Provide[Container.script_uow])):
-    print(uow)
-    print(type(uow.user_repository.session))
-    print(uow.user_repository.session)
-
+async def health_check(uow: UnitOfWork = Depends(Closing[Provide[Container.script_uow]])):
     return {"status": "ok"}
 
 @auth_router.post('/login', response_model=TokenAuthResponse)
 @inject
-async def login(data: LoginScheme, uow: UnitOfWork = Depends(Provide[Container.script_uow])):
+async def login(data: LoginScheme, uow: UnitOfWork = Depends(Closing[Provide[Container.script_uow]])):
     user = await uow.user_repository.get_by_login(data.login)
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail='Ошибка авторизации')
