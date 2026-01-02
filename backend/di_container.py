@@ -12,25 +12,23 @@ from logger import GLOG
 @asynccontextmanager
 async def session_resource(
     session_factory: async_sessionmaker[AsyncSession],
-    label: str,
 ) -> AsyncIterator[AsyncSession]:
     async with session_factory() as session:
         try:
             yield session
         finally:
-            GLOG.info("закрыли %s сессию", label)
+            GLOG.info("закрыли сессию")
 
 
 @asynccontextmanager
 async def unit_of_work_resource(
     session_factory: async_sessionmaker[AsyncSession],
-    label: str,
 ) -> AsyncIterator[UnitOfWork]:
     async with session_factory() as session:
         try:
             yield UnitOfWork(session=session)
         finally:
-            GLOG.info("закрыли %s UnitOfWork", label)
+            GLOG.info("закрыли UnitOfWork")
 
 
 class Container(containers.DeclarativeContainer):
@@ -67,25 +65,21 @@ class Container(containers.DeclarativeContainer):
     admin_session = providers.Resource(
         session_resource,
         session_factory=admin_sessionmaker,
-        label="админ",
     )
 
     script_session = providers.Resource(
         session_resource,
         session_factory=script_sessionmaker,
-        label="скрипт",
     )
 
     admin_uow = providers.Resource(
         unit_of_work_resource,
         session_factory=admin_sessionmaker,
-        label="админ",
     )
 
     script_uow = providers.Resource(
         unit_of_work_resource,
         session_factory=script_sessionmaker,
-        label="скрипт",
     )
 
 
