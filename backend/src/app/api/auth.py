@@ -11,7 +11,10 @@ auth_router = APIRouter(prefix="/auth")
 @auth_router.get("/health", tags=["health"])
 @inject
 async def health_check(uow: UnitOfWork = Depends(Provide[Container.script_uow])):
+    print(uow)
+    print(type(uow.user_repository.session))
     print(uow.user_repository.session)
+
     return {"status": "ok"}
 
 @auth_router.post('/login', response_model=TokenAuthResponse)

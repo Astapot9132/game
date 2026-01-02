@@ -14,3 +14,21 @@ user = User(
 )
 
 print(PyUser.model_validate(user, from_attributes=True))
+
+
+class Check:
+
+    def __init__(self):
+        print('here')
+
+    def __call__(self, *args, **kwargs):
+        print('call')
+
+    def check(self):
+        print('test')
+
+a = Check()
+
+a()
+a()
+a.check()

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_asyn
 
 from backend.db_connection import ADB_URL, SDB_URL
 from backend.src.modules.shared.unit_of_work import UnitOfWork
+from logger import GLOG
 
 
 @providers.Factory
@@ -13,15 +14,16 @@ async def script_session():
     session_maker = container.script_sessionmaker()
     async with session_maker() as session:
         yield session
+    GLOG.info('закрыли скрипт')
 
-        
+
 @providers.Factory
 @asynccontextmanager
 async def admin_session():
     session_maker = container.admin_sessionmaker()
     async with session_maker() as session:
         yield session
-
+    GLOG.info('закрыли админ')
 
 
 class Container(containers.DeclarativeContainer):
@@ -41,23 +43,22 @@ class Container(containers.DeclarativeContainer):
         pool_pre_ping=True
     )
 
-    admin_sessionmaker = providers.Singleton(
+    admin_sessionmaker = providers.Factory(
         async_sessionmaker,
         bind=admin_engine,
         class_=AsyncSession,
         expire_on_commit=False
     )
 
-    script_sessionmaker = providers.Singleton(
+    script_sessionmaker = providers.Factory(
         async_sessionmaker,
         bind=script_engine,
         class_=AsyncSession,
         expire_on_commit=False,
-        
     )
 
-    admin_uow = providers.Factory(UnitOfWork, session=admin_session)
-    script_uow = providers.Factory(UnitOfWork, session=script_session)
+    admin_uow = providers.Factory(UnitOfWork, session=admin_session.provider)
+    script_uow = providers.Factory(UnitOfWork, session=admin_session.provider)
 
 
 
