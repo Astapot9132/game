@@ -1,4 +1,16 @@
+import os
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+#
+# sys.path.append('C:\\Users\\user\\Desktop\\work\\Game')
+
+source_root = Path(__file__).resolve().parent.parent.parent.parent
+
+if str(source_root) not in sys.path:
+    sys.path.append(str(source_root))
+
 
 import pytest
 from fastapi import FastAPI
