@@ -1,34 +1,33 @@
+import asyncio
 import datetime
 
+import aiohttp
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+
+from backend.db_connection import SDB_ENGINE
 from backend.src.infrastructure.models import User
 from backend.src.infrastructure.pydantic_models.users import PyUser
-
-user = User(
-    id=1,
-    login='test',
-    password_hash='test',
-    user_type='admin',
-    created_at=datetime.datetime.now(),
-    updated_at=datetime.datetime.now(),
-    language='RU'
-)
-
-print(PyUser.model_validate(user, from_attributes=True))
+from backend.src.modules.shared.unit_of_work import UnitOfWork
 
 
-class Check:
+async def main():
+    async with aiohttp.ClientSession() as session:
 
-    def __init__(self):
-        print('here')
 
-    def __call__(self, *args, **kwargs):
-        print('call')
+        await asyncio.gather(*[check(session) for i in range(3)])
 
-    def check(self):
-        print('test')
+async def check(session):
+    async with session.get('http://localhost:8000/auth/health') as resp:
+        print(datetime.datetime.now())
 
-a = Check()
+# if __name__ == '__main__':
+#     asyncio.run(main())
+# 
+# async def main():
+#     uow = UnitOfWork(async_sessionmaker(SDB_ENGINE, class_=AsyncSession, expire_on_commit=False)())
+#     async with uow:
+#         print('here')
+    
 
-a()
-a()
-a.check()
+if __name__ == '__main__':
+    asyncio.run(main())

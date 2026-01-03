@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from backend.di_container import container
@@ -15,5 +17,5 @@ async def test_update_successful_dialog_right_path(client):
     
     data = LoginScheme(login=login, password='password')
 
-    response = client.post(f"/auth/login")
+    response = client.post(f"/auth/login", json=data.model_dump(mode='json'))
     print(response)

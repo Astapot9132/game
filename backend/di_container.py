@@ -8,31 +8,31 @@ from backend.db_connection import ADB_URL, SDB_URL
 from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
-
-@asynccontextmanager
-async def session_resource(
-    session_factory: async_sessionmaker[AsyncSession],
-) -> AsyncIterator[AsyncSession]:
-    async with session_factory() as session:
-        try:
-            yield session
-        finally:
-            GLOG.info("закрыли сессию")
-
-
-@asynccontextmanager
-async def unit_of_work_resource(
-    session_factory: async_sessionmaker[AsyncSession],
-) -> AsyncIterator[UnitOfWork]:
-    async with session_factory() as session:
-        try:
-            yield UnitOfWork(session=session)
-        finally:
-            GLOG.info("закрыли UnitOfWork")
+# 
+# @asynccontextmanager
+# async def session_resource(
+#     session_factory: async_sessionmaker[AsyncSession],
+# ) -> AsyncIterator[AsyncSession]:
+#     async with session_factory() as session:
+#         try:
+#             yield session
+#         finally:
+#             GLOG.info("закрыли сессию")
+# 
+# 
+# @asynccontextmanager
+# async def unit_of_work_resource(
+#     session_factory: async_sessionmaker[AsyncSession],
+# ) -> AsyncIterator[UnitOfWork]:
+#     async with session_factory() as session:
+#         try:
+#             yield UnitOfWork(session=session)
+#         finally:
+#             GLOG.info("закрыли UnitOfWork")
 
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(modules=["backend.src.app.api.auth"])
+    wiring_config = containers.WiringConfiguration(modules=["backend.src.app.dependencies"])
 
     admin_engine = providers.Singleton(
         create_async_engine,
@@ -61,25 +61,15 @@ class Container(containers.DeclarativeContainer):
         class_=AsyncSession,
         expire_on_commit=False,
     )
+    
+    admin_session = providers.Factory(admin_sessionmaker)
+    script_session = providers.Factory(script_sessionmaker)
 
-    admin_session = providers.Resource(
-        session_resource,
-        session_factory=admin_sessionmaker,
+    admin_uow = providers.Factory(
+        UnitOfWork, session=admin_session
     )
-
-    script_session = providers.Resource(
-        session_resource,
-        session_factory=script_sessionmaker,
-    )
-
-    admin_uow = providers.Resource(
-        unit_of_work_resource,
-        session_factory=admin_sessionmaker,
-    )
-
-    script_uow = providers.Resource(
-        unit_of_work_resource,
-        session_factory=script_sessionmaker,
+    script_uow = providers.Factory(
+        UnitOfWork, session=script_session
     )
 
 

@@ -11,8 +11,7 @@ from logger import GLOG
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """НЕ ЗАБУДЬТЕ ВНЕСТИ СЮДА СВОЙ РОУТЕР, ИНАЧЕ ПРИ НАЛИЧИИ ТАМ СЕРВИСА ИЗ КОНТЕЙНЕРА ОН НЕ ЗАПУСТИТСЯ"""
-    container.wire(modules=["backend.src.app.api.auth"])
+    container.wire(modules=["backend.src.app.dependencies"])
     GLOG.info("Контейнер настроен (wire)")
 
     yield
