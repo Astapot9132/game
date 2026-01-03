@@ -42,8 +42,8 @@ class Container(containers.DeclarativeContainer):
         expire_on_commit=False,
     )
     
-    admin_session = ScopedResource(admin_sessionmaker)
-    script_session = ScopedResource(script_sessionmaker)
+    admin_session = ScopedResource(providers.Callable(lambda sm: sm(), admin_sessionmaker.provider) )
+    script_session = ScopedResource(providers.Callable(lambda sm: sm(), script_sessionmaker.provider) )
 
     admin_uow = providers.Factory(
         UnitOfWork, session=admin_session
