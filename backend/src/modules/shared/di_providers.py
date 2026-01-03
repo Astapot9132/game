@@ -1,37 +1,52 @@
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from dependency_injector import providers
 
-class ScopedResource(providers.Provider):
-    class _Handle(AbstractContextManager, AbstractAsyncContextManager):
-        def __init__(self, factory, args, kwargs):
-          self._factory = factory
-          self._args = args
-          self._kwargs = kwargs
-          self._ctx = None
-        
-        def __enter__(self):
-          self._ctx = self._factory(*self._args, **self._kwargs)
-          if hasattr(self._ctx, "__enter__"):
-              return self._ctx.__enter__()
-          return self._ctx
-        
-        def __exit__(self, exc_type, exc, tb):
-          if hasattr(self._ctx, "__exit__"):
-              return self._ctx.__exit__(exc_type, exc, tb)
-        
-        async def __aenter__(self):
-          self._ctx = self._factory(*self._args, **self._kwargs)
-          if hasattr(self._ctx, "__aenter__"):
-              return await self._ctx.__aenter__()
-          return self._ctx
-        
-        async def __aexit__(self, exc_type, exc, tb):
-          if hasattr(self._ctx, "__aexit__"):
-              return await self._ctx.__aexit__(exc_type, exc, tb)
 
-    def __init__(self, factory, *args, **kwargs):
-      super().__init__()
-      self._factory = providers.DelegatedFactory(factory, *args, **kwargs)
+
+import asyncio
+import inspect
+from contextvars import ContextVar
+from dependency_injector import providers
+
+
+class ScopedResource(providers.Resource):
+    def __init__(self, provides, *args, **kwargs):
+        super().__init__(provides, *args, **kwargs)
+        self._scopes = ContextVar(f"scoped_resource_{id(self)}", default=None)
+
+    def _provide(self, args, kwargs):
+        resource = super()._provide(args, kwargs)
+        stack = self._scopes.get() or []
+        stack.append((resource, self._shutdowner))
+        self._scopes.set(stack)
+        
+        # сбрасываем внутреннее состояние Resource, чтобы следующий вызов создал новый экземпляр
+        self._resource = None
+        self._shutdowner = None
+        self._initialized = False
+        return resource
     
-    def __call__(self, *args, **kwargs):
-      return self._Handle(self._factory, args, kwargs)
+    def shutdown(self):
+        stack = self._scopes.get()
+        if not stack:
+            return
+        resource, shutdowner = stack.pop()
+        self._scopes.set(stack)
+        
+        async def _run():
+            obj = await resource if isinstance(resource, asyncio.Future) else resource
+            if shutdowner:
+                result = shutdowner(obj)
+                if inspect.isawaitable(result):
+                    await result
+                return
+            close = getattr(obj, "close", None)
+            if close:
+                maybe = close()
+                if inspect.isawaitable(maybe):
+                    await maybe
+
+        coro = _run()
+        if inspect.isawaitable(coro):
+            return asyncio.create_task(coro)
+        return coro
