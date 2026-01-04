@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any, Type, Literal
 
 from pydantic import BaseModel
-from sqlalchemy import select, Row
+from sqlalchemy import select, Row, delete
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
@@ -38,6 +38,22 @@ class SqlAlchemyRepository(ABC):
         executed_query = await self.session.execute(query)
         result = executed_query.first() if select_fields else executed_query.scalars().first()
         return self.to_pydantic(result) if result else None
+
+    async def add(self, value: dict[str, Any],
+                       returning_fields: list[InstrumentedAttribute[Any]] | None = None,
+                       commit: bool = False):
+        if not value:
+            return
+
+        query = insert(self.model).values(**value)
+        if returning_fields:
+            query = query.returning(*returning_fields)
+        executed_query = await self.session.execute(query)
+        result = executed_query.fetchone() if returning_fields else None
+        if commit:
+            await self.session.commit()
+
+        return result
     
     async def add_many(self, values: list[dict], 
                        returning_fields: list[InstrumentedAttribute[Any]]|None = None,
@@ -55,4 +71,33 @@ class SqlAlchemyRepository(ABC):
         
         return result
             
-            
+    
+
+    @classmethod
+    async def add_many_with_ignore_conflict(cls, values: list[dict],
+                                              commit: bool = False,
+                                              returning_fields: list[InstrumentedAttribute[Any]] = None,
+                                              ):
+        """
+        Метод INSERT IGNORE
+        """
+        if values:
+            query_insert = insert(cls.model).values(values).prefix_with('IGNORE')
+
+            if returning_fields:
+                query_insert = query_insert.returning(*returning_fields)
+
+            executed_query = await self.session.execute(query_insert)
+            if commit:
+                await self.session.commit()
+
+            result = executed_query.fetchall() if returning_fields else None
+            return result
+    
+    
+    async def delete_by_id(self, id: int, commit: bool = False):
+        query = delete(self.model).where(self.model.id == id)
+        await self.session.execute(query)
+        if commit:
+            await self.session.commit()
+        return None

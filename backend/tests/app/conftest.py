@@ -47,3 +47,8 @@ async def test_uow():
     async with sm() as session:
         uow = container.script_uow()
         yield uow(session)
+# 
+# @pytest_asyncio.fixture(scope='function')
+# async def test_uow():
+#     async with get_script_uow() as uow:
+#         yield uow

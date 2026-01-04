@@ -1,11 +1,9 @@
 from contextlib import asynccontextmanager
 
-from dependency_injector.wiring import Provide
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
-from backend.di_container import container, Container
+from backend.di_container import container
 from backend.src.app.api.auth import auth_router
-from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
 

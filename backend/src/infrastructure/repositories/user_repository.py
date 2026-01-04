@@ -17,4 +17,12 @@ class UserRepository(SqlAlchemyRepository):
         query = select(*model_fields).where(self.model.login == login)
         executed_query = await self.session.execute(query)
         result = executed_query.first() if select_fields else executed_query.scalars().first()
-        return PyUser.model_validate(result, from_attributes=True) if result else None
+        return PyUser.model_validate(result,
+                                     # from_attributes=True # проверить вдруг будет работать
+                                     ) if result else None
+        #
+    #
+    # async def add(self, value: PyUser,
+    #               returning_fields: list[InstrumentedAttribute[Any]] | None = None,
+    #               commit: bool = False):
+    #     return await super().add(value=value.model_dump(), returning_fields=returning_fields, commit=commit)

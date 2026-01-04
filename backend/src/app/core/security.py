@@ -9,7 +9,10 @@ from passlib.context import CryptContext
 from backend.src.infrastructure.repositories.user_repository import UserRepository
 from cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
 
-pwd_context = CryptContext(schemes=['bcrypt'])
+pwd_context = CryptContext(schemes=['bcrypt'],
+                           bcrypt__default_rounds=12,
+                           bcrypt__ident='2b'
+                           )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/login')
 
 

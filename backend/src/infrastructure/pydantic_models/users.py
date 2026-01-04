@@ -1,10 +1,12 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 
 from backend.src.infrastructure.enums.users.enums import UserLanguageEnum, UserTypeEnum
 
 
 class PyUser(BaseModel):
-    id: int
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+    
+    id: int | None = None
     login: str
     password_hash: str
     email: str | None = None
