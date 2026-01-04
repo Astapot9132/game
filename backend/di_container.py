@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import pytest
 from dependency_injector import containers, providers
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -9,6 +10,13 @@ from backend.src.modules.shared.di_providers import ScopedResource
 from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
+
+async def get_script_uow():
+    sm = container.script_sessionmaker()
+    async with sm() as session:
+        uow = container.script_uow()
+        yield uow(session)
+    print("Закрыли UOW")
 
 
 class Container(containers.DeclarativeContainer):
@@ -41,15 +49,12 @@ class Container(containers.DeclarativeContainer):
         class_=AsyncSession,
         expire_on_commit=False,
     )
-    
-    admin_session = ScopedResource(providers.Callable(lambda sm: sm(), admin_sessionmaker.provider) )
-    script_session = ScopedResource(providers.Callable(lambda sm: sm(), script_sessionmaker.provider) )
 
-    admin_uow = providers.Factory(
-        UnitOfWork, session=admin_session
+    admin_uow = providers.Object(
+        UnitOfWork
     )
-    script_uow = providers.Factory(
-        UnitOfWork, session=script_session
+    script_uow = providers.Object(
+        UnitOfWork
     )
 
 

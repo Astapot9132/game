@@ -1,7 +1,9 @@
 from abc import ABC
 from typing import Any, Type, Literal
 
+from pydantic import BaseModel
 from sqlalchemy import select, Row
+from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
@@ -36,3 +38,21 @@ class SqlAlchemyRepository(ABC):
         executed_query = await self.session.execute(query)
         result = executed_query.first() if select_fields else executed_query.scalars().first()
         return self.to_pydantic(result) if result else None
+    
+    async def add_many(self, values: list[dict], 
+                       returning_fields: list[InstrumentedAttribute[Any]]|None = None,
+                       commit: bool = False):
+        if not values:
+            return
+        
+        query = insert(self.model).values(values)
+        if returning_fields:
+            query = query.returning(*returning_fields)
+        executed_query = await self.session.execute(query)
+        result = executed_query.fetchall() if returning_fields else None
+        if commit:
+            await self.session.commit()
+        
+        return result
+            
+            
