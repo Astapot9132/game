@@ -8,3 +8,9 @@ class UnitOfWork:
         self.session = session
         self.user_repository = UserRepository(session)
     
+    async def __aenter__(self):
+        async with self.session:
+            return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        print('Закрыли сессию')

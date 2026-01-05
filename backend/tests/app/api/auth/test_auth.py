@@ -3,11 +3,9 @@ from http import HTTPStatus
 
 import pytest
 
-from backend.di_container import container, get_script_uow
 from backend.src.app.core.security import hash_password
 from backend.src.app.pydantic_models.auth import AuthScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
-from backend.src.infrastructure.repositories.user_repository import UserRepository
 
 
 @pytest.mark.asyncio

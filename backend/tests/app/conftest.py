@@ -1,17 +1,12 @@
-import os
-import sys
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from pyasn1.debug import scope
 from starlette.testclient import TestClient
 
-from backend.di_container import container, get_script_uow
+from backend.di_container import container
 from backend.src.app.api.auth import auth_router
-from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
 
@@ -43,10 +38,9 @@ def client(test_app: FastAPI):
 
 @pytest_asyncio.fixture(scope='function')
 async def test_uow():
-    sm = container.script_sessionmaker()
-    async with sm() as session:
-        uow = container.script_uow()
-        yield uow(session)
+    uow = container.script_uow()
+    async with uow:
+        yield uow
 # 
 # @pytest_asyncio.fixture(scope='function')
 # async def test_uow():

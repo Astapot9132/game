@@ -9,7 +9,7 @@ from logger import GLOG
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    container.wire(modules=["backend.src.app.api.auth"])
+    # container.wire(modules=["backend.src.app.api.auth"])
     GLOG.info("Контейнер настроен (wire)")
 
     yield
