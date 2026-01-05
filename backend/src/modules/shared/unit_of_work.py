@@ -6,11 +6,10 @@ from backend.src.infrastructure.repositories.user_repository import UserReposito
 class UnitOfWork:
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.user_repository = UserRepository(session)
-    
+        self.user_repository = UserRepository(self.session)
+
     async def __aenter__(self):
-        async with self.session:
-            return self
-        
+        return self
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        print('Закрыли сессию')
+        return await self.session.__aexit__(exc_type, exc_val, exc_tb)
