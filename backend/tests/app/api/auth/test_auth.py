@@ -102,15 +102,9 @@ async def test_registration_right_path(client, test_uow):
     assert response.status_code == HTTPStatus.OK
     
     
-    # user_in_db = await test_uow.user_repository.get_by_login(login)
-    # assert user_in_db
-    # 
-    # await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
-    
-    response_json = response.json()
-    assert response_json['user_id']
     user_in_db = await test_uow.user_repository.get_by_login(login)
-    print(f'User с логином "{login}" ', user_in_db)
+    assert user_in_db
+
+    await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
     
-    await test_uow.user_repository.delete_by_id(response_json['user_id'], commit=True)
     

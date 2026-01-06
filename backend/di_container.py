@@ -14,6 +14,7 @@ class Container(containers.DeclarativeContainer):
 
     admin_engine = providers.Singleton(
         create_async_engine,
+        isolation_level='READ COMMITTED',
         url=ADB_URL,
         echo=True,
         pool_pre_ping=True,
@@ -21,6 +22,7 @@ class Container(containers.DeclarativeContainer):
 
     script_engine = providers.Singleton(
         create_async_engine,
+        isolation_level='READ COMMITTED',
         url=SDB_URL,
         echo=True,
         pool_pre_ping=True,
