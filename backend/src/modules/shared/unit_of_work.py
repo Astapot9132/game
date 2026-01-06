@@ -12,4 +12,9 @@ class UnitOfWork:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            await self.session.rollback()
         return await self.session.__aexit__(exc_type, exc_val, exc_tb)
+    
+    async def commit(self):
+        await self.session.commit()

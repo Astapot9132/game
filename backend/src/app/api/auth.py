@@ -44,15 +44,17 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
         password_hash=hash_password(data.password),
         user_type=UserTypeEnum.player
     )
-    user = await uow.user_repository.add_many_with_ignore_conflict(
-        values=[reg_model.model_dump(exclude_unset=True)], returning_fields=[User.id], commit=True
+    user_id = await uow.user_repository.add_with_ignore_conflict(
+        value=reg_model.model_dump(exclude_unset=True)
     )
-    if not user:
+    if not user_id:
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail='Пользователь с данным логином уже существует')
+
+    await uow.commit()
     
-    user_id = user[0].id
     return JSONResponse(status_code=HTTPStatus.OK, content={
         'access_token': create_access_token(user_id),
         'refresh_token': create_refresh_token(user_id),
         'token_type': 'Bearer',
+        'user_id': user_id
     })

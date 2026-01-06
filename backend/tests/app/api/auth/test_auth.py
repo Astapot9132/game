@@ -1,4 +1,5 @@
 import json
+import time
 from http import HTTPStatus
 
 import pytest
@@ -65,15 +66,13 @@ async def test_login_right_path(client, test_uow):
     login = 'not_registered_login'
     right_password = 'right'
 
-    await test_uow.user_repository.add_many(
-        values=[
-            {
+    await test_uow.user_repository.add_with_ignore_conflict(
+        value={
                 'login': login,
                 'password_hash': hash_password(right_password),
                 'updated_by': 'test',
                 'user_type': UserTypeEnum.admin.value,
-            }
-        ],
+            },
         commit=True
     )
     user_in_db = await test_uow.user_repository.get_by_login(login)
@@ -84,4 +83,34 @@ async def test_login_right_path(client, test_uow):
     response = client.post(f"/auth/login", json=data.model_dump(mode='json'))
     assert response.status_code == HTTPStatus.OK
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
+    
+@pytest.mark.asyncio
+async def test_registration_right_path(client, test_uow):
+    """
+    Тест для аутентификации - правильный результат
+    """
+
+    login = 'not_registered_login'
+    password = 'password'
+
+    user_in_db = await test_uow.user_repository.get_by_login(login)
+    assert not user_in_db
+
+    data = AuthScheme(login=login, password=password)
+
+    response = client.post(f"/auth/registration", json=data.model_dump(mode='json'))
+    assert response.status_code == HTTPStatus.OK
+    
+    
+    # user_in_db = await test_uow.user_repository.get_by_login(login)
+    # assert user_in_db
+    # 
+    # await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
+    
+    response_json = response.json()
+    assert response_json['user_id']
+    user_in_db = await test_uow.user_repository.get_by_login(login)
+    print(f'User с логином "{login}" ', user_in_db)
+    
+    await test_uow.user_repository.delete_by_id(response_json['user_id'], commit=True)
     

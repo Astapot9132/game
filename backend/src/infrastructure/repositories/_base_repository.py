@@ -40,32 +40,25 @@ class SqlAlchemyRepository(ABC):
         return self.to_pydantic(result) if result else None
 
     async def add(self, value: dict[str, Any],
-                       returning_fields: list[InstrumentedAttribute[Any]] | None = None,
                        commit: bool = False):
         if not value:
             return
 
         query = insert(self.model).values(**value)
-        if returning_fields:
-            query = query.returning(*returning_fields)
         executed_query = await self.session.execute(query)
-        result = executed_query.fetchone() if returning_fields else None
         if commit:
             await self.session.commit()
 
-        return result
+        return executed_query.lastrowid
     
-    async def add_many(self, values: list[dict], 
-                       returning_fields: list[InstrumentedAttribute[Any]]|None = None,
+    async def add_many(self, values: list[dict],
                        commit: bool = False):
         if not values:
             return
         
         query = insert(self.model).values(values)
-        if returning_fields:
-            query = query.returning(*returning_fields)
         executed_query = await self.session.execute(query)
-        result = executed_query.fetchall() if returning_fields else None
+        result = executed_query.lastrowid
         if commit:
             await self.session.commit()
         
@@ -73,26 +66,20 @@ class SqlAlchemyRepository(ABC):
             
     
 
-    @classmethod
-    async def add_many_with_ignore_conflict(cls, values: list[dict],
-                                              commit: bool = False,
-                                              returning_fields: list[InstrumentedAttribute[Any]] = None,
-                                              ):
+    async def add_with_ignore_conflict(self,
+                                            value: dict,
+                                            commit: bool = False,
+                                            ):
         """
         Метод INSERT IGNORE
         """
-        if values:
-            query_insert = insert(cls.model).values(values).prefix_with('IGNORE')
-
-            if returning_fields:
-                query_insert = query_insert.returning(*returning_fields)
-
+        if value:
+            query_insert = insert(self.model).values(**value).prefix_with('IGNORE')
             executed_query = await self.session.execute(query_insert)
             if commit:
                 await self.session.commit()
 
-            result = executed_query.fetchall() if returning_fields else None
-            return result
+            return executed_query.lastrowid
     
     
     async def delete_by_id(self, id: int, commit: bool = False):
