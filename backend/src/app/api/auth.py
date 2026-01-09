@@ -42,7 +42,8 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
     reg_model = PyUser(
         login=data.login,
         password_hash=hash_password(data.password),
-        user_type=UserTypeEnum.player
+        user_type=UserTypeEnum.player,
+        updated_by='Регистрация'
     )
     user_id = await uow.user_repository.add_with_ignore_conflict(
         value=reg_model.model_dump(exclude_unset=True)

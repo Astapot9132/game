@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from backend.src.infrastructure.repositories.user_repository import UserRepository
-from cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
+from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=['bcrypt'],
                            bcrypt__default_rounds=12,

@@ -3,10 +3,10 @@
 import { reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { login, register } from '@/lib/api';
+import axios from 'axios';
 
 interface AuthFormState {
-  email: string;
-  username: string;
+  login: string;
   password: string;
 }
 
@@ -15,8 +15,7 @@ const mode = ref<'login' | 'register'>('login');
 const isLoading = ref(false);
 const error = ref('');
 const form = reactive<AuthFormState>({
-  email: '',
-  username: '',
+  login: '',
   password: '',
 });
 
@@ -28,14 +27,14 @@ function toggleMode() {
 }
 
 async function handleSubmit() {
+
   try {
     isLoading.value = true;
     error.value = '';
 
     const payload = {
-      email: form.email,
       password: form.password,
-      username: form.username,
+      login: form.login,
     };
 
     const response =
@@ -48,8 +47,18 @@ async function handleSubmit() {
 
     await router.push({ name: 'dashboard' });
   } catch (err) {
-    error.value = 'Не удалось отправить данные. Проверь ввод или сервер.';
-    console.error(err);
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status
+      if (status === 401) {
+        error.value = err.response?.data.detail;
+      } else if (status) {
+        error.value = `Статус ошибки ${status}.`
+    } else {
+      error.value = 'Сервер не доступен'
+    }} else {
+      error.value = 'Внутренняя ошибка сервера'
+    }
+    console.log(err)
   } finally {
     isLoading.value = false;
   }
@@ -60,37 +69,23 @@ async function handleSubmit() {
   <section class="auth">
     <div class="auth__card">
       <h1 class="auth__title">{{ mode === 'login' ? 'Вход' : 'Регистрация' }}</h1>
-      <form class="auth__form" @submit.prevent="handleSubmit">
+      <form class="auth__form" @submit.prevent="handleSubmit()">
         <label class="auth__label">
-          <span>E-mail</span>
           <input
-            v-model.trim="form.email"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="you@example.com"
-          />
-        </label>
-
-        <label v-if="mode === 'register'" class="auth__label">
-          <span>Никнейм</span>
-          <input
-            v-model.trim="form.username"
+            v-model.trim="form.login"
             type="text"
             required
-            minlength="3"
-            placeholder="player_one"
+            placeholder="Введите никнейм"
           />
         </label>
 
         <label class="auth__label">
-          <span>Пароль</span>
           <input
             v-model.trim="form.password"
             type="password"
             required
-            minlength="6"
             autocomplete="current-password"
+            placeholder="Введите пароль"
           />
         </label>
 

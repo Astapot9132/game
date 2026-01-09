@@ -16,6 +16,7 @@ class PyUser(BaseModel):
     age: int | None = None
     language: UserLanguageEnum = UserLanguageEnum.RU
     user_type: UserTypeEnum
+    updated_by: str
 
     @classmethod
     @field_validator("age")

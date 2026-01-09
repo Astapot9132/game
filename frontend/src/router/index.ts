@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import AuthView from '@/views/AuthView.vue';
-import DashboardView from '@/views/DashboardView.vue';
+import AuthView from '@/views/auth-view.vue';
+import DashboardView from '@/views/dashboard-view.vue';
 
 
 function isAuthenticated(): boolean {

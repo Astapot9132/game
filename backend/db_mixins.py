@@ -18,5 +18,5 @@ class DBUserTypeEnum(str, Enum):
 class HistoricalMixin:
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    updated_by: Mapped[DBUserTypeEnum] = mapped_column(String(64))
+    updated_by: Mapped[str] = mapped_column(String(64))
     

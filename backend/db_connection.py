@@ -3,10 +3,9 @@ from urllib.parse import quote_plus
 
 import dotenv
 import colorama
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 
-from cfg import PROD
-from logger import GLOG
+from backend.cfg import PROD
 
 colorama.just_fix_windows_console()
 

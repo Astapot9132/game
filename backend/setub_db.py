@@ -1,6 +1,5 @@
 import asyncio
 import os
-import traceback
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -10,7 +9,7 @@ from sqlalchemy.exc import ProgrammingError, OperationalError
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from backend.db_connection import DB_NAME, DB_SCRIPT_USER, DB_SCRIPT_PASSWORD
-from cfg import PROD
+from backend.cfg import PROD
 from logger import GLOG
 
 dotenv.load_dotenv()
@@ -20,11 +19,11 @@ BASE_DIR = Path(__file__).resolve().parent
 ALEMBIC_INI = BASE_DIR / "src" / "alembic.ini"
 
 DB_DRIVER = os.getenv("DB_DRIVER", "mysql+aiomysql")
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PORT = os.getenv("DB_PORT", "3306")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
 DB_QUERY = os.getenv("DB_QUERY", "charset=utf8mb4")
-DB_ADMIN_USER = quote_plus(os.getenv('DB_ADMIN_USER', 'root'))
-DB_ADMIN_PASSWORD = quote_plus(os.getenv('DB_ADMIN_PASSWORD', 'pass'))
+DB_ADMIN_USER = quote_plus(os.getenv('DB_ADMIN_USER'))
+DB_ADMIN_PASSWORD = quote_plus(os.getenv('DB_ADMIN_PASSWORD'))
 DB_URL = f"{DB_DRIVER}://{DB_ADMIN_USER}:{DB_ADMIN_PASSWORD}@{DB_HOST}:{DB_PORT}?{DB_QUERY}"
 DB_ENGINE = create_async_engine(
     DB_URL,
