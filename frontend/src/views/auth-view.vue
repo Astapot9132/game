@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { login, register } from '@/lib/api';
+import { login_user, register_user } from '@/lib/api';
 import axios from 'axios';
 
 interface AuthFormState {
@@ -37,13 +37,12 @@ async function handleSubmit() {
       login: form.login,
     };
 
-    const response =
-      mode.value === 'login' ? await login(payload) : await register(payload);
+    mode.value === 'login' ? await login_user(payload) : await register_user(payload);
 
-    localStorage.setItem('access_token', response.access_token);
-    if (response.refresh_token) {
-      localStorage.setItem('refresh_token', response.refresh_token);
-    }
+    // localStorage.setItem('access_token', response.access_token);
+    // if (response.refresh_token) {
+    //   localStorage.setItem('refresh_token', response.refresh_token);
+    // }
 
     await router.push({ name: 'dashboard' });
   } catch (err) {

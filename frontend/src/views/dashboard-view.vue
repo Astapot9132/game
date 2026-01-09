@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+import { logout_user } from '@/lib/api';
+
+const router = useRouter();
+
+async function logout() {
+  // localStorage.removeItem('access_token');
+  // localStorage.removeItem('refresh_token');
+  await logout_user()
+  router.push({ name: 'auth' });
+}
+</script>
+
 <template>
   <section class="dashboard">
     <div class="dashboard__card">
@@ -8,19 +22,10 @@
   </section>
 </template>
 
-<script setup lang="ts">
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-function logout() {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  router.push({ name: 'auth' });
-}
-</script>
 
 <style scoped>
+
+
 .dashboard {
   min-height: 100vh;
   display: flex;
