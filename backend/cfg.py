@@ -12,8 +12,8 @@ dotenv.load_dotenv()
 PROD = bool(os.getenv('PROD'))
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'secret')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '10'))
-REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv('REFRESH_TOKEN_EXPIRE_MINUTES', '1440'))
+ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '10'))
+REFRESH_TOKEN_EXPIRE_SECONDS = int(os.getenv('REFRESH_TOKEN_EXPIRE_MINUTES', '1440'))
 
 if PROD:
     GLOG.warning('Запуск сервера в PRODUCTION режиме.')

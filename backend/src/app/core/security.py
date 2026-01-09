@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Optional
+from http import HTTPStatus
+from typing import Annotated, Optional, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
+from passlib.exc import InvalidTokenError
 
+from backend.src.app.pydantic_models.auth import JWTScheme
 from backend.src.infrastructure.repositories.user_repository import UserRepository
-from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
+from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS
 
 pwd_context = CryptContext(schemes=['bcrypt'],
                            bcrypt__default_rounds=12,
@@ -23,18 +26,26 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 def _create_token(user_id: int, expires_delta: int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_delta)
+    expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
     payload = {'user_id': user_id, 'exp': expire}
     return jwt.encode(payload, JWT_SECRET)
 
-
 def create_access_token(user_id: int) -> str:
-    return _create_token(user_id, int(ACCESS_TOKEN_EXPIRE_MINUTES))
-
+    return _create_token(user_id, int(ACCESS_TOKEN_EXPIRE_SECONDS))
 
 def create_refresh_token(user_id: int) -> str:
-    return _create_token(user_id, int(REFRESH_TOKEN_EXPIRE_MINUTES))
+    return _create_token(user_id, int(REFRESH_TOKEN_EXPIRE_SECONDS))
 
+def decode_refresh_token(token) -> JWTScheme:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return JWTScheme(**payload)
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "token expired"})
+    except InvalidTokenError:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "token invalid"})
+    except ValueError:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "token invalid"})
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],

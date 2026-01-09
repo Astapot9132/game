@@ -1,28 +1,22 @@
-import asyncio
+import secrets
 from http import HTTPStatus
 
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Request
 from starlette.responses import JSONResponse
 
+from backend.cfg import ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS
 from backend.di_container import api_script_uow
-from backend.src.app.core.security import verify_password, create_access_token, create_refresh_token, hash_password
-from backend.src.app.pydantic_models.auth import TokenAuthResponse, AuthScheme
+from backend.src.app.core.security import verify_password, create_access_token, create_refresh_token, hash_password, \
+    decode_refresh_token
+from backend.src.app.pydantic_models.auth import AuthScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
-from backend.src.infrastructure.models import User
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
 
 auth_router = APIRouter(prefix="/auth")
 
 
-@auth_router.get("/health", tags=["health"])
-async def health_check(uow: UnitOfWork = Depends(api_script_uow)):
-    print(uow.session)
-    await asyncio.sleep(5)
-    print(uow.session)
-    return {"status": "ok"}
-
-@auth_router.post('/login', response_model=TokenAuthResponse)
+@auth_router.post('/login')
 async def login(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     user = await uow.user_repository.get_by_login(data.login)
 
@@ -31,13 +25,29 @@ async def login(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
 
     assert user.id
 
-    return JSONResponse(status_code=HTTPStatus.OK, content={
-        'access_token': create_access_token(user.id),
-        'refresh_token': create_refresh_token(user.id),
-        'token_type': 'Bearer',
-    })
+    response = JSONResponse(
+        status_code=HTTPStatus.OK, content={}
+    )
+    response.set_cookie(
+        key="access_token",
+        value=create_access_token(user.id),
+        httponly=True,
+        secure=True,
+        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=create_refresh_token(user.id),
+        httponly=True,
+        secure=True,
+        max_age=REFRESH_TOKEN_EXPIRE_SECONDS,
+        path="/api/auth/refresh"
+    )
 
-@auth_router.post('/registration', response_model=TokenAuthResponse)
+
+    return response
+
+@auth_router.post('/registration')
 async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     reg_model = PyUser(
         login=data.login,
@@ -49,13 +59,49 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
         value=reg_model.model_dump(exclude_unset=True)
     )
     if not user_id:
-        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail='Пользователь с данным логином уже существует')
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail={"error": 'Пользователь с данным логином уже существует'})
 
     await uow.commit()
     
-    return JSONResponse(status_code=HTTPStatus.OK, content={
-        'access_token': create_access_token(user_id),
-        'refresh_token': create_refresh_token(user_id),
-        'token_type': 'Bearer',
-        'user_id': user_id
-    })
+    return JSONResponse(status_code=HTTPStatus.OK, content={})
+
+
+@auth_router.post('/logout')
+async def logout():
+    response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
+    response.delete_cookie("csrf_token")
+    return response
+
+@auth_router.post('/refresh')
+async def refresh(request: Request):
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "not auth"})
+    
+    payload = decode_refresh_token(token)
+    
+    user_id = payload.user_id
+    
+    new_access_token = create_access_token(user_id)
+    new_refresh_token = create_refresh_token(user_id)
+    
+    csrf_token = secrets.token_urlsafe(32)
+
+    
+    response = JSONResponse(status_code=HTTPStatus.OK, content={"csrf": csrf_token})
+    response.set_cookie(
+        "access_token", value=new_access_token, 
+        max_age=ACCESS_TOKEN_EXPIRE_SECONDS, 
+        httponly=True,
+        secure=True
+    )
+    response.set_cookie(
+        "refresh_token", value=new_refresh_token, 
+        max_age=REFRESH_TOKEN_EXPIRE_SECONDS, 
+        secure=True, 
+        httponly=True, 
+        path="/api/auth/refresh"
+    )
+    return response
