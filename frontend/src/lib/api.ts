@@ -3,12 +3,26 @@ import axios from 'axios';
 
 let isRefreshing = false;
 let pendingRequests: ((tokenUpdated: boolean) => void)[] = [];
+let csrfToken: string | null = null;
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
+
+api.interceptors.request.use(async (config) => {
+    const method = config.method?.toLowerCase();
+    const needsCsrf = method && !['get', 'head', 'options'].includes(method);
+    if (needsCsrf) {
+      if (!csrfToken) {
+        await csrf_token();
+      }
+      config.headers = config.headers ?? {};
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+    return config;
+  });
 
 api.interceptors.response.use(
   (res) => res,
@@ -79,5 +93,11 @@ export async function refresh_user(): Promise<void> {
     const { data } = await api.post('/auth/refresh');
     return data
 }
+
+async function csrf_token() {
+    const { data } = await api.get<{ csrf_token: string }>('/auth/csrf');
+    csrfToken = data.csrf_token;
+    return csrfToken;
+  }
 
 export default api;
