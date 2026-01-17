@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from passlib.exc import InvalidTokenError
+from pydantic import ValidationError
 
 from backend.di_container import api_script_uow
 from backend.src.app.pydantic_models.auth import JWTScheme
@@ -38,7 +39,8 @@ def create_access_token(user_id: int) -> str:
 def create_refresh_token(user_id: int) -> str:
     return _create_token(user_id, REFRESH_TOKEN_EXPIRE_SECONDS)
 
-def decode_refresh_token(token) -> JWTScheme:
+
+def decode_token(token) -> JWTScheme:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         return JWTScheme(**payload)
@@ -46,7 +48,7 @@ def decode_refresh_token(token) -> JWTScheme:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token expired"})
     except (InvalidTokenError, JWTError):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token invalid"})
-    except ValueError:
+    except ValidationError:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token invalid"})
 
 
@@ -56,23 +58,21 @@ async def get_current_user(
     uow: UnitOfWork
 ):
     access_token = request.cookies.get('access_token')
-    credentials_exception = HTTPException(
+    refresh_token = request.cookies.get('refresh_token')
+    token_expired_exception = HTTPException(
         status_code=HTTPStatus.UNAUTHORIZED,
         detail='Ошибка авторизации',
     )
+    credentials_exception = HTTPException(
+        status_code=HTTPStatus.FORBIDDEN,
+        detail='Ошибка авторизации',
+    )
     if not access_token:
-        raise credentials_exception
+        raise token_expired_exception if refresh_token else credentials_exception
 
-    try:
-        payload = jwt.decode(access_token, JWT_SECRET, algorithms=['HS256'])
-        user_id: Optional[int] = payload.get('user_id')
-    except JWTError as exc:
-        raise credentials_exception from exc
-
-    if user_id is None:
-        raise credentials_exception
-
-    user = await uow.user_repository.get_by_id(user_id)
+    jwt_scheme = decode_token(access_token)
+    
+    user = await uow.user_repository.get_by_id(jwt_scheme.user_id)
     if user is None:
         raise credentials_exception
 

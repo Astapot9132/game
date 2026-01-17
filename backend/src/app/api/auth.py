@@ -6,7 +6,7 @@ from starlette.responses import JSONResponse
 from backend.cfg import ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS
 from backend.di_container import api_script_uow
 from backend.src.app.core.security import verify_password, create_access_token, create_refresh_token, hash_password, \
-    decode_refresh_token, get_current_user
+    decode_token, get_current_user
 from backend.src.app.pydantic_models.auth import AuthScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
@@ -20,7 +20,7 @@ async def login(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     user = await uow.user_repository.get_by_login(data.login)
 
     if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Ошибка авторизации')
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='Ошибка авторизации')
 
     assert user.id
 
@@ -74,7 +74,7 @@ async def refresh(request: Request):
     if not token:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
     
-    payload = decode_refresh_token(token)
+    payload = decode_token(token)
     
     user_id = payload.user_id
     
