@@ -3,20 +3,21 @@ from http import HTTPStatus
 from fastapi import APIRouter, HTTPException, Depends, Request
 from starlette.responses import JSONResponse
 
-from backend.cfg import ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS
 from backend.di_container import api_script_uow
-from backend.src.app.core.security import verify_password, create_access_token, create_refresh_token, hash_password, \
-    decode_token, get_current_user
+from backend.src.app.core.security import verify_password, hash_password, \
+    decode_token, get_current_user, set_access_token, set_refresh_token, set_csrf_cookie
 from backend.src.app.pydantic_models.auth import AuthScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
+from src.app.core.security import require_csrf
 
-auth_router = APIRouter(prefix="/auth")
+auth_router = APIRouter(prefix="/auth", dependencies=[Depends(require_csrf)])
 
 
 @auth_router.post('/login')
-async def login(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
+async def login(data: AuthScheme, 
+                uow: UnitOfWork = Depends(api_script_uow),):
     user = await uow.user_repository.get_by_login(data.login)
 
     if not user or not verify_password(data.password, user.password_hash):
@@ -27,19 +28,8 @@ async def login(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     response = JSONResponse(
         status_code=HTTPStatus.OK, content={}
     )
-    response.set_cookie(
-        key="access_token",
-        value=create_access_token(user.id),
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=create_refresh_token(user.id),
-        httponly=True,
-        max_age=REFRESH_TOKEN_EXPIRE_SECONDS,
-        path="/auth/refresh"
-    )
+    set_access_token(response, user.id)
+    set_refresh_token(response, user.id)
     return response
 
 @auth_router.post('/registration')
@@ -77,25 +67,20 @@ async def refresh(request: Request):
     payload = decode_token(token)
     
     user_id = payload.user_id
-    
-    new_access_token = create_access_token(user_id)
-    new_refresh_token = create_refresh_token(user_id)
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})
-    response.set_cookie(
-        "access_token", value=new_access_token, 
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS, 
-        httponly=True,
-    )
-    response.set_cookie(
-        "refresh_token", value=new_refresh_token, 
-        max_age=REFRESH_TOKEN_EXPIRE_SECONDS, 
-        httponly=True, 
-        path="/auth/refresh"
-    )
+    set_access_token(response, user_id)
+    set_refresh_token(response, user_id)
     return response
 
-@auth_router.get('/me')
+@auth_router.get("/csrf", dependencies=[])
+async def csrf():
+    response = JSONResponse({"csrf_token": ""})
+    token = set_csrf_cookie(response)
+    response.body = response.render({"csrf_token": token})
+    return response
+
+@auth_router.get('/me', dependencies=[])
 async def me(request: Request, uow: UnitOfWork = Depends(api_script_uow)):
     user = await get_current_user(request, uow)
     return JSONResponse(status_code=HTTPStatus.OK, content={'id': user.id, 'login': user.login, 'email': user.email})

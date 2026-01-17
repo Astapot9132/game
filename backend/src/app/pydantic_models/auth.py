@@ -5,10 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 
-# 
-# class TokenAuthResponse(BaseModel):
-#     csrf: str
-    
+
 class AuthScheme(BaseModel):
     login: str
     password: str
