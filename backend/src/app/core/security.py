@@ -107,11 +107,14 @@ def set_refresh_token(response: Response, user_id: int):
         httponly=True, 
         path="/auth/refresh"
     )
-
-def set_csrf_cookie(response: Response) -> str:
+    
+def create_csrf_token() -> str:
     token = CSRF_SERIALIZER.dumps({
         "nonce": secrets.token_urlsafe(16),
       })
+    return token
+
+def set_csrf_cookie(response: Response, token):
     response.set_cookie(
       CSRF_COOKIE,
       token,
@@ -119,10 +122,10 @@ def set_csrf_cookie(response: Response) -> str:
       samesite="strict",
       max_age=CSRF_TOKEN_EXPIRE_SECONDS,
     )
-    return token
 
 
 def require_csrf(request: Request) -> None:
+    print('Проверяем csrf')
     cookie_token = request.cookies.get(CSRF_COOKIE)
     header_token = request.headers.get(CSRF_HEADER)
     if not cookie_token or not header_token:

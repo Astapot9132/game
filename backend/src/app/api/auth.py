@@ -10,12 +10,12 @@ from backend.src.app.pydantic_models.auth import AuthScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from src.app.core.security import require_csrf
+from src.app.core.security import require_csrf, create_csrf_token
 
-auth_router = APIRouter(prefix="/auth", dependencies=[Depends(require_csrf)])
+auth_router = APIRouter(prefix="/auth",)
 
 
-@auth_router.post('/login')
+@auth_router.post('/login', dependencies=[Depends(require_csrf)])
 async def login(data: AuthScheme, 
                 uow: UnitOfWork = Depends(api_script_uow),):
     user = await uow.user_repository.get_by_login(data.login)
@@ -32,7 +32,7 @@ async def login(data: AuthScheme,
     set_refresh_token(response, user.id)
     return response
 
-@auth_router.post('/registration')
+@auth_router.post('/registration', dependencies=[Depends(require_csrf)])
 async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     reg_model = PyUser(
         login=data.login,
@@ -51,14 +51,14 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
     return JSONResponse(status_code=HTTPStatus.OK, content={})
 
 
-@auth_router.post('/logout')
+@auth_router.post('/logout', dependencies=[Depends(require_csrf)])
 async def logout():
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token", path="/auth/refresh")
     return response
 
-@auth_router.post('/refresh')
+@auth_router.post('/refresh', dependencies=[Depends(require_csrf)])
 async def refresh(request: Request):
     token = request.cookies.get("refresh_token")
     if not token:
@@ -75,9 +75,9 @@ async def refresh(request: Request):
 
 @auth_router.get("/csrf", dependencies=[])
 async def csrf():
-    response = JSONResponse({"csrf_token": ""})
-    token = set_csrf_cookie(response)
-    response.body = response.render({"csrf_token": token})
+    token = create_csrf_token()
+    response = JSONResponse(content={"csrf_token": token})
+    set_csrf_cookie(response, token)
     return response
 
 @auth_router.get('/me', dependencies=[])

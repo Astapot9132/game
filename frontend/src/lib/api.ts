@@ -13,9 +13,12 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
     const method = config.method?.toLowerCase();
+    
     const needsCsrf = method && !['get', 'head', 'options'].includes(method);
+    console.log(`method ${method}`)
     if (needsCsrf) {
       if (!csrfToken) {
+        console.log('here')
         await csrf_token();
       }
       config.headers = config.headers ?? {};
