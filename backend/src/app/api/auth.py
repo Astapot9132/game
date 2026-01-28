@@ -5,17 +5,17 @@ from starlette.responses import JSONResponse
 
 from backend.di_container import api_script_uow
 from backend.src.app.core.security import verify_password, hash_password, \
-    decode_token, get_current_user, set_access_token, set_refresh_token, set_csrf_cookie
-from backend.src.app.pydantic_models.auth import AuthScheme
+    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth
+from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from src.app.core.security import require_csrf, create_csrf_token
+from src.app.core.security import require_csrf, create_csrf_token, ACCESS_COOKIE, REFRESH_COOKIE
 
 auth_router = APIRouter(prefix="/auth",)
 
 
-@auth_router.post('/login', dependencies=[Depends(require_csrf)])
+@auth_router.post('/login')
 async def login(data: AuthScheme, 
                 uow: UnitOfWork = Depends(api_script_uow),):
     user = await uow.user_repository.get_by_login(data.login)
@@ -32,7 +32,7 @@ async def login(data: AuthScheme,
     set_refresh_token(response, user.id)
     return response
 
-@auth_router.post('/registration', dependencies=[Depends(require_csrf)])
+@auth_router.post('/registration')
 async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
     reg_model = PyUser(
         login=data.login,
@@ -51,22 +51,27 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
     return JSONResponse(status_code=HTTPStatus.OK, content={})
 
 
-@auth_router.post('/logout', dependencies=[Depends(require_csrf)])
+@auth_router.post('/logout')
 async def logout():
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token", path="/auth/refresh")
+    response.delete_cookie(ACCESS_COOKIE)
+    response.delete_cookie(REFRESH_COOKIE, path="/auth/refresh")
     return response
 
-@auth_router.post('/refresh', dependencies=[Depends(require_csrf)])
+@auth_router.post('/refresh', dependencies=[])
 async def refresh(request: Request):
-    token = request.cookies.get("refresh_token")
-    if not token:
+    access_token = request.cookies.get(ACCESS_COOKIE)
+    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    if not access_token or not refresh_token:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
     
-    payload = decode_token(token)
+    access_payload = decode_token(access_token)
+    refresh_payload = decode_token(refresh_token)
     
-    user_id = payload.user_id
+    if not access_payload.user_id == refresh_payload.user_id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
+
+    user_id = refresh_payload.user_id
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})
     set_access_token(response, user_id)
@@ -81,7 +86,17 @@ async def csrf():
     return response
 
 @auth_router.get('/me', dependencies=[])
-async def me(request: Request, uow: UnitOfWork = Depends(api_script_uow)):
-    user = await get_current_user(request, uow)
-    return JSONResponse(status_code=HTTPStatus.OK, content={'id': user.id, 'login': user.login, 'email': user.email})
+async def me(uow: UnitOfWork = Depends(api_script_uow),
+             user_payload: JWTScheme = Depends(require_auth)):
+    user = await uow.user_repository.get_by_id(user_payload.user_id)
+    if user is None:
+        raise HTTPException(
+        status_code=HTTPStatus.FORBIDDEN,
+        detail='Ошибка авторизации',
+    )
+    return JSONResponse(status_code=HTTPStatus.OK, content={
+        'id': user.id, 
+        'login': user.login, 
+        'email': user.email
+    })
     

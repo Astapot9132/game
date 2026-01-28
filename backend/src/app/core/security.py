@@ -21,6 +21,7 @@ from backend.src.infrastructure.repositories.user_repository import UserReposito
 from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, \
     CSRF_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
 from backend.src.modules.shared.unit_of_work import UnitOfWork
+from logger import GLOG
 
 pwd_context = CryptContext(schemes=['bcrypt'],
                            bcrypt__default_rounds=12,
@@ -57,51 +58,49 @@ def decode_token(token) -> JWTScheme:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         return JWTScheme(**payload)
     except ExpiredSignatureError:
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token expired"})
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "token expired"})
     except (InvalidTokenError, JWTError):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token invalid"})
     except ValidationError:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "token invalid"})
 
 
-
-async def get_current_user(
-    request: Request,
-    uow: UnitOfWork
-):
+def require_auth(request: Request) -> JWTScheme:
+    GLOG.info('Проверяем аутентификацию')
     access_token = request.cookies.get(ACCESS_COOKIE)
-    refresh_token = request.cookies.get(REFRESH_COOKIE)
-    token_expired_exception = HTTPException(
-        status_code=HTTPStatus.UNAUTHORIZED,
-        detail='Ошибка авторизации',
-    )
-    credentials_exception = HTTPException(
-        status_code=HTTPStatus.FORBIDDEN,
-        detail='Ошибка авторизации',
-    )
     if not access_token:
-        raise token_expired_exception if refresh_token else credentials_exception
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='Not authorized')
 
-    jwt_scheme = decode_token(access_token)
-    
-    user = await uow.user_repository.get_by_id(jwt_scheme.user_id)
-    if user is None:
-        raise credentials_exception
+    user_payload = decode_token(access_token)
+    return user_payload
 
-    return user
 
+def require_csrf(request: Request) -> None:
+    GLOG.info('Проверяем csrf') # TODO надо вынести логгер в DI
+    cookie_token = request.cookies.get(CSRF_COOKIE)
+    header_token = request.headers.get(CSRF_HEADER)
+    if not cookie_token or not header_token:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token required")
+    if not secrets.compare_digest(cookie_token, header_token):
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token mismatch")
+    try:
+        CSRF_SERIALIZER.loads(cookie_token, max_age=CSRF_TOKEN_EXPIRE_SECONDS)
+    except itsdangerous.SignatureExpired:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="CSRF token expired")
+    except itsdangerous.BadSignature:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token invalid")
 
 def set_access_token(response: Response, user_id: int):
     response.set_cookie(
-        key="access_token",
+        key=ACCESS_COOKIE,
         value=create_access_token(user_id),
         httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
+        max_age=REFRESH_TOKEN_EXPIRE_SECONDS, # специально кладем на время рефреш токена, чтобы он не исчез
     )
     
 def set_refresh_token(response: Response, user_id: int):
     response.set_cookie(
-        key="refresh_token", 
+        key=REFRESH_COOKIE, 
         value=create_refresh_token(user_id), 
         max_age=REFRESH_TOKEN_EXPIRE_SECONDS, 
         httponly=True, 
@@ -124,17 +123,4 @@ def set_csrf_cookie(response: Response, token):
     )
 
 
-def require_csrf(request: Request) -> None:
-    print('Проверяем csrf')
-    cookie_token = request.cookies.get(CSRF_COOKIE)
-    header_token = request.headers.get(CSRF_HEADER)
-    if not cookie_token or not header_token:
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token required")
-    if not secrets.compare_digest(cookie_token, header_token):
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token mismatch")
-    try:
-        CSRF_SERIALIZER.loads(cookie_token, max_age=CSRF_TOKEN_EXPIRE_SECONDS)
-    except itsdangerous.SignatureExpired:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="CSRF token expired")
-    except itsdangerous.BadSignature:
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token invalid")
+
