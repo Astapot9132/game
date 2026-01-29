@@ -65,10 +65,11 @@ async def refresh(request: Request):
     if not access_token or not refresh_token:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
     
-    access_payload = decode_token(access_token)
-    refresh_payload = decode_token(refresh_token)
     
-    if not access_payload.user_id == refresh_payload.user_id:
+    access_payload = decode_token(access_token, options={'verify_exp': False})
+    refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
+    
+    if access_payload.user_id != refresh_payload.user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     user_id = refresh_payload.user_id

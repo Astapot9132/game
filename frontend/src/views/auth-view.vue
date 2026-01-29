@@ -53,7 +53,7 @@ async function handleSubmit() {
   } catch (err) {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status
-      if (status === 401) {
+      if (status === 403) {
         error.value = err.response?.data?.detail;
       } else if (status) {
         error.value = `Статус ошибки ${status}.`

@@ -18,8 +18,7 @@ from starlette.responses import Response
 from backend.di_container import api_script_uow
 from backend.src.app.pydantic_models.auth import JWTScheme
 from backend.src.infrastructure.repositories.user_repository import UserRepository
-from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, \
-    CSRF_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
+from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
 from backend.src.modules.shared.unit_of_work import UnitOfWork
 from logger import GLOG
 
@@ -53,9 +52,9 @@ def create_refresh_token(user_id: int) -> str:
     return _create_token(user_id, REFRESH_TOKEN_EXPIRE_SECONDS)
 
 
-def decode_token(token) -> JWTScheme:
+def decode_token(token, options: dict[str, Any] = None) -> JWTScheme:
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], options=options)
         return JWTScheme(**payload)
     except ExpiredSignatureError:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail={"error": "token expired"})
@@ -84,9 +83,7 @@ def require_csrf(request: Request) -> None:
     if not secrets.compare_digest(cookie_token, header_token):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token mismatch")
     try:
-        CSRF_SERIALIZER.loads(cookie_token, max_age=CSRF_TOKEN_EXPIRE_SECONDS)
-    except itsdangerous.SignatureExpired:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="CSRF token expired")
+        CSRF_SERIALIZER.loads(cookie_token)
     except itsdangerous.BadSignature:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token invalid")
 
@@ -119,7 +116,6 @@ def set_csrf_cookie(response: Response, token):
       token,
       httponly=False,
       samesite="strict",
-      max_age=CSRF_TOKEN_EXPIRE_SECONDS,
     )
 
 
