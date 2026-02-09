@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 from logging.config import fileConfig
+from pprint import pprint
 
 from alembic import context
 from sqlalchemy import pool

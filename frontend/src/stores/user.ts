@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { api, logout_user } from '@/lib/api';
+import { api, logout_user, csrf_token } from '@/lib/api';
 import router from '@/router';
 
 
@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     profile: null as null | { id: string; login: string; email: string },
     loading: false,
+    csrfToken: string | null = null;
     hasCheckedAuth: false,
   }),
   getters: {
@@ -15,7 +16,6 @@ export const useUserStore = defineStore('user', {
   actions: {
     async loadCurrentUser() {
       this.loading = true;
-      this.hasCheckedAuth = true;
       try {
         const { data } = await api.get('/auth/me');
         this.profile = data;
@@ -23,13 +23,19 @@ export const useUserStore = defineStore('user', {
         this.profile = null
       }
       finally {
+        this.hasCheckedAuth = true;
         this.loading = false;
       }
     },
     clear() {
       this.profile = null;
+      this.csrfToken = null;
       this.hasCheckedAuth = false;
     },
+    async csrf() {
+        const { data } = await api.get<{ csrf_token: string }>('/auth/csrf');
+        this.csrfToken = data.csrf_token;
+    }
     async logout() {
       await logout_user();
       this.clear();

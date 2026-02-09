@@ -4,8 +4,7 @@ import axios from 'axios';
 
 let isRefreshing = false;
 let pendingRequests: ((tokenUpdated: boolean) => void)[] = [];
-let csrfToken: string | null = null;
-
+const userStore = useUserStore()
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,11 +18,11 @@ api.interceptors.request.use(async (config) => {
     const needsCsrf = method && !['get', 'head', 'options'].includes(method);
     
     if (needsCsrf) {
-      if (!csrfToken) {
-        await csrf_token();
+      if (!userStore.csrfToken) {
+        await userStore.csrf();
       }
       config.headers = config.headers ?? {};
-      config.headers['X-CSRF-Token'] = csrfToken;
+      config.headers['X-CSRF-Token'] = userStore.csrfToken;
     }
     return config;
   });
@@ -32,6 +31,9 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const { config, response } = error;
+    if (response?.status === 403) {
+      await userStore.logout()
+    }
     if (response?.status !== 401 || config._retry) {
       return Promise.reject(error);
     }
@@ -97,11 +99,5 @@ export async function refresh_user(): Promise<void> {
     const { data } = await api.post('/auth/refresh');
     return data
 }
-
-async function csrf_token() {
-    const { data } = await api.get<{ csrf_token: string }>('/auth/csrf');
-    csrfToken = data.csrf_token;
-    return csrfToken;
-  }
 
 export default api;

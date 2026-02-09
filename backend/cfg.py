@@ -3,7 +3,7 @@ import os
 import colorama
 import dotenv
 
-from logger import GLOG
+from backend.logger import GLOG
 
 colorama.just_fix_windows_console()
 
