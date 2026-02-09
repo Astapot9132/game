@@ -3,11 +3,22 @@ import { api, logout_user, csrf_token } from '@/lib/api';
 import router from '@/router';
 
 
+type UserProfile = { id: string; login: string; email: string };
+
+
+type UserState = {
+  profile: UserProfile | null;
+  loading: boolean;
+  csrfToken: string | null;
+  hasCheckedAuth: boolean;
+};
+
+
 export const useUserStore = defineStore('user', {
-  state: () => ({
-    profile: null as null | { id: string; login: string; email: string },
+  state: (): UserState => ({
+    profile: null,
     loading: false,
-    csrfToken: string | null = null;
+    csrfToken: null,
     hasCheckedAuth: false,
   }),
   getters: {
