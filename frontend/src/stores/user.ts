@@ -46,7 +46,7 @@ export const useUserStore = defineStore('user', {
     async csrf() {
         const { data } = await api.get<{ csrf_token: string }>('/auth/csrf');
         this.csrfToken = data.csrf_token;
-    }
+    },
     async logout() {
       await logout_user();
       this.clear();
