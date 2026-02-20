@@ -1,3 +1,4 @@
+import hmac
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -5,7 +6,7 @@ from starlette.responses import JSONResponse
 
 from backend.di_container import api_script_uow
 from backend.src.app.core.security import verify_password, hash_password, \
-    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth
+    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth, encode_refresh_token_for_db
 from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
@@ -59,7 +60,7 @@ async def logout():
     return response
 
 @auth_router.post('/refresh', dependencies=[])
-async def refresh(request: Request):
+async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
     access_token = request.cookies.get(ACCESS_COOKIE)
     refresh_token = request.cookies.get(REFRESH_COOKIE)
     if not access_token or not refresh_token:
@@ -72,6 +73,9 @@ async def refresh(request: Request):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     user_id = refresh_payload.user_id
+    user = uow.user_repository.get_by_id(user_id)
+    # if not user or user.refresh_token != encode_refresh_token_for_db(refresh_payload.refresh_token):
+    #     raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})
     set_access_token(response, user_id)

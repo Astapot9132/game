@@ -18,6 +18,7 @@ class User(BaseSQLModel, HistoricalMixin):
     age: Mapped[int | None] = mapped_column(SmallInteger(), nullable=True)
     language: Mapped[UserLanguageEnum] = mapped_column(String(32), server_default='RU')
     user_type: Mapped[UserTypeEnum] = mapped_column(String(32))
+    refresh_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         UniqueConstraint('login', name='uq_users_login'),

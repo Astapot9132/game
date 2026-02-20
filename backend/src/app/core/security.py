@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Annotated, Optional, Any
@@ -20,6 +22,7 @@ from backend.src.app.pydantic_models.auth import JWTScheme
 from backend.src.infrastructure.repositories.user_repository import UserRepository
 from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
 from backend.src.modules.shared.unit_of_work import UnitOfWork
+from cfg import REFRESH_TOKEN_PEPPER
 from logger import GLOG
 
 pwd_context = CryptContext(schemes=['bcrypt'],
@@ -51,6 +54,13 @@ def create_access_token(user_id: int) -> str:
 def create_refresh_token(user_id: int) -> str:
     return _create_token(user_id, REFRESH_TOKEN_EXPIRE_SECONDS)
 
+def encode_refresh_token_for_db(token: str):
+    digest = hmac.new(
+        REFRESH_TOKEN_PEPPER,
+        token.encode("utf-8"),
+        hashlib.sha256
+    ).digest()
+    return digest
 
 def decode_token(token, options: dict[str, Any] = None) -> JWTScheme:
     try:

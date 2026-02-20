@@ -7,10 +7,9 @@ const userStore = useUserStore();
 <template>
   <section class="profile">
     
-    <div class="dashboard__card">
+    <div class="profile__card">
       <h1>Главная страница игры</h1>
       <p>Здесь позже появится список действий/боёв. Пока что это заглушка.</p>
-      <button type="button" @click="userStore.logout">Выйти</button>
     </div>
   </section>
 </template>
@@ -20,18 +19,21 @@ const userStore = useUserStore();
 
 
 .profile {
-  min-height: 100vh;
+  height: 90vh;
+  min-height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.dashboard__card {
+.profile__card {
   background: white;
-  padding: 40px;
+  width: 90%;
+  height: 90%;
+  padding: 24px;
   border-radius: 16px;
   box-shadow: 0 20px 70px rgb(15 23 42 / 0.2);
-  text-align: center;
+  /* text-align: center; */
 }
 
 button {
