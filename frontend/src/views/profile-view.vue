@@ -5,7 +5,8 @@ const userStore = useUserStore();
 </script>
 
 <template>
-  <section class="dashboard">
+  <section class="profile">
+    
     <div class="dashboard__card">
       <h1>Главная страница игры</h1>
       <p>Здесь позже появится список действий/боёв. Пока что это заглушка.</p>
@@ -18,7 +19,7 @@ const userStore = useUserStore();
 <style scoped>
 
 
-.dashboard {
+.profile {
   min-height: 100vh;
   display: flex;
   align-items: center;

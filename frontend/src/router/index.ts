@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AuthView from '@/views/auth-view.vue';
-import DashboardView from '@/views/dashboard-view.vue';
+import ProfileView from '@/views/profile-view.vue';
 import { useUserStore } from '@/stores/user';
 
 
@@ -10,9 +10,9 @@ const router = createRouter({
     { path: '/', redirect: '/auth' },
     { path: '/auth', name: 'auth', component: AuthView },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView,
       meta: { requiresAuth: true },
     },
   ],
@@ -27,7 +27,7 @@ router.beforeEach(async (to) => {
     return { name: 'auth' };
   }
   if (to.name === 'auth' && userStore.isAuthenticated) {
-    return { name: 'dashboard' };
+    return { name: 'profile' };
   }
   return true;
 });

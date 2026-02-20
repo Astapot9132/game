@@ -44,7 +44,7 @@ async function handleSubmit() {
       await login_user(payload);
       await userStore.loadCurrentUser();
       console.log(userStore.profile)
-      await router.push({ name: 'dashboard' });
+      await router.push({ name: 'profile' });
     } else {
       await register_user(payload);
       mode.value = 'login';
