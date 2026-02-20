@@ -64,8 +64,7 @@ async def refresh(request: Request):
     refresh_token = request.cookies.get(REFRESH_COOKIE)
     if not access_token or not refresh_token:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
-    
-    
+
     access_payload = decode_token(access_token, options={'verify_exp': False})
     refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
     

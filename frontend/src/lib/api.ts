@@ -33,6 +33,7 @@ api.interceptors.response.use(
     const { config, response } = error;
     if (response?.status === 403) {
       await userStore.logout()
+      return Promise.reject(error);
     }
     if (response?.status !== 401 || config._retry) {
       return Promise.reject(error);
