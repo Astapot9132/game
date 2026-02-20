@@ -98,21 +98,26 @@ def require_csrf(request: Request) -> None:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="CSRF token invalid")
 
 def set_access_token(response: Response, user_id: int):
+    token = create_access_token(user_id)
     response.set_cookie(
         key=ACCESS_COOKIE,
-        value=create_access_token(user_id),
+        value=token,
         httponly=True,
         max_age=REFRESH_TOKEN_EXPIRE_SECONDS, # специально кладем на время рефреш токена, чтобы он не исчез
     )
+    return token
     
-def set_refresh_token(response: Response, user_id: int):
+async def set_refresh_token(response: Response, user_id: int, uow: UnitOfWork):
+    token = create_refresh_token(user_id)
+    await uow.user_repository.update_by_id(id=user_id, values={'refresh_token': encode_refresh_token_for_db(token)})
     response.set_cookie(
         key=REFRESH_COOKIE, 
-        value=create_refresh_token(user_id), 
+        value=token,
         max_age=REFRESH_TOKEN_EXPIRE_SECONDS, 
-        httponly=True, 
+        httponly=True,
         path="/auth/refresh"
     )
+    return token
     
 def create_csrf_token() -> str:
     token = CSRF_SERIALIZER.dumps({

@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any, Type, Literal
 
 from pydantic import BaseModel
-from sqlalchemy import select, Row, delete
+from sqlalchemy import select, Row, delete, update
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
@@ -80,7 +80,15 @@ class SqlAlchemyRepository(ABC):
                 await self.session.commit()
 
             return executed_query.lastrowid
-    
+
+
+    async def update_by_id(self, id: int, values: dict[str, Any], commit: bool = False):
+        query_update = update(self.model).values(**values).where(self.model.id == id)
+        executed_query = await self.session.execute(query_update)
+        if commit:
+            await self.session.commit()
+
+        return executed_query.lastrowid
     
     async def delete_by_id(self, id: int, commit: bool = False):
         query = delete(self.model).where(self.model.id == id)
