@@ -1,11 +1,14 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException, Depends, Request
+from jose import JWTError
+from passlib.exc import InvalidTokenError
+from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
 from backend.di_container import api_script_uow
 from backend.src.app.core.security import verify_password, hash_password, \
-    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth, encode_refresh_token_for_db
+    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth, hash_refresh_token_for_db
 from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
@@ -53,11 +56,22 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
 
 
 @auth_router.post('/logout')
-async def logout(uow: UnitOfWork = Depends(api_script_uow), user_payload: JWTScheme = Depends(require_auth)):
+async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow)):
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
     response.delete_cookie(ACCESS_COOKIE)
-    await uow.user_repository.update_by_id(id=user_payload.user_id, values={'refresh_token': None}, commit=True)
+    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    print(refresh_token)
+    if not refresh_token:
+        return response
+
+    try:
+        refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
+        await uow.user_repository.update_by_id(id=refresh_payload.user_id, values={'refresh_token': None}, commit=True)
+    except (InvalidTokenError, JWTError, ValidationError):
+        pass
+
     response.delete_cookie(REFRESH_COOKIE, path="/auth/refresh")
+
     return response
 
 @auth_router.post('/refresh', dependencies=[])
@@ -75,7 +89,7 @@ async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
 
     user_id = refresh_payload.user_id
     user = uow.user_repository.get_by_id(user_id)
-    if not user or user.refresh_token != encode_refresh_token_for_db(refresh_payload.refresh_token):
+    if not user or user.refresh_token != hash_refresh_token_for_db(refresh_payload.refresh_token):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})

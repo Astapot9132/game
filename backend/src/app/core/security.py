@@ -54,12 +54,12 @@ def create_access_token(user_id: int) -> str:
 def create_refresh_token(user_id: int) -> str:
     return _create_token(user_id, REFRESH_TOKEN_EXPIRE_SECONDS)
 
-def encode_refresh_token_for_db(token: str):
+def hash_refresh_token_for_db(token: str):
     digest = hmac.new(
         REFRESH_TOKEN_PEPPER,
         token.encode("utf-8"),
         hashlib.sha256
-    ).digest()
+    ).hexdigest()
     return digest
 
 def decode_token(token, options: dict[str, Any] = None) -> JWTScheme:
@@ -109,13 +109,13 @@ def set_access_token(response: Response, user_id: int):
     
 async def set_refresh_token(response: Response, user_id: int, uow: UnitOfWork):
     token = create_refresh_token(user_id)
-    await uow.user_repository.update_by_id(id=user_id, values={'refresh_token': encode_refresh_token_for_db(token)})
+    await uow.user_repository.update_by_id(id=user_id, values={'refresh_token': hash_refresh_token_for_db(token)})
     response.set_cookie(
         key=REFRESH_COOKIE, 
         value=token,
         max_age=REFRESH_TOKEN_EXPIRE_SECONDS, 
         httponly=True,
-        path="/auth/refresh"
+        path="/auth"
     )
     return token
     

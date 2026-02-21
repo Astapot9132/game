@@ -15,7 +15,7 @@ JWT_SECRET = os.getenv('JWT_SECRET', 'secret')
 CSRF_SECRET = os.getenv('CSRF_SECRET', 'secret')
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv('ACCESS_TOKEN_EXPIRE_SECONDS', '10'))
 REFRESH_TOKEN_EXPIRE_SECONDS = int(os.getenv('REFRESH_TOKEN_EXPIRE_SECONDS', '1440'))
-REFRESH_TOKEN_PEPPER = os.getenv('REFRESH_TOKEN_PEPPER', 'secret')
+REFRESH_TOKEN_PEPPER = os.getenv("REFRESH_TOKEN_PEPPER", "secret").encode('utf-8')
 
 if PROD:
     GLOG.warning('Запуск сервера в PRODUCTION режиме.')
