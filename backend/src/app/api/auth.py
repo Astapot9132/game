@@ -89,7 +89,7 @@ async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
 
     user_id = refresh_payload.user_id
     user = uow.user_repository.get_by_id(user_id)
-    if not user or user.refresh_token != hash_refresh_token_for_db(refresh_payload.refresh_token):
+    if not user or user.refresh_token_hash != hash_refresh_token_for_db(refresh_payload.refresh_token):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})

@@ -77,7 +77,7 @@ async def test_login_right_path(client, test_uow):
         commit=True
     )
     user_in_db = await test_uow.user_repository.get_by_login(login)
-    assert user_in_db
+    assert user_in_db and not user_in_db.refresh_token_hash
 
     data = AuthScheme(login=login, password=right_password)
 
@@ -105,7 +105,6 @@ async def test_registration_right_path(client, test_uow):
 
     user_in_db = await test_uow.user_repository.get_by_login(login)
     assert user_in_db
+    assert not user_in_db.refresh_token_hash
 
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
-
-#

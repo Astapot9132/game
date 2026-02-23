@@ -17,6 +17,7 @@ class PyUser(BaseModel):
     language: UserLanguageEnum = UserLanguageEnum.RU
     user_type: UserTypeEnum
     updated_by: str
+    refresh_token_hash: str | None = None
 
     @classmethod
     @field_validator("age")

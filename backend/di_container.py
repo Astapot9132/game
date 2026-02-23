@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from dependency_injector import containers, providers
+from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.db_connection import ADB_URL, SDB_URL
@@ -31,6 +32,16 @@ class Container(containers.DeclarativeContainer):
         pool_pre_ping=True,
     )
 
+    # test_engine = providers.Singleton(
+    #     create_async_engine,
+    #     isolation_level='READ COMMITTED',
+    #     url=SDB_URL,
+    #     poolclass=NullPool,
+    #     echo=True,
+    #     pool_pre_ping=True,
+    # )
+
+
     admin_sessionmaker = providers.Singleton(
         async_sessionmaker,
         bind=admin_engine,
@@ -44,9 +55,17 @@ class Container(containers.DeclarativeContainer):
         class_=AsyncSession,
         expire_on_commit=False,
     )
+
+    # test_sessionmaker = providers.Singleton(
+    #     async_sessionmaker,
+    #     bind=script_engine,
+    #     class_=AsyncSession,
+    #     expire_on_commit=False,
+    # )
     
     admin_session = providers.Factory(admin_sessionmaker())
     script_session = providers.Factory(script_sessionmaker())
+    # test_session = providers.Factory(test_sessionmaker())
 
     admin_uow = providers.Factory(
         UnitOfWork, session=admin_session
@@ -54,7 +73,10 @@ class Container(containers.DeclarativeContainer):
     script_uow = providers.Factory(
         UnitOfWork, session=script_session
     )
-
+    # test_uow = providers.Factory(
+    #     UnitOfWork, session=test_session
+    # )
+    #
 
 container = Container()
 

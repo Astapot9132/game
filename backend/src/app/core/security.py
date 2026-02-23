@@ -104,7 +104,7 @@ def set_access_token(response: Response, user_id: int):
     
 async def set_refresh_token(response: Response, user_id: int, uow: UnitOfWork):
     token = create_refresh_token(user_id)
-    await uow.user_repository.update_by_id(id=user_id, values={'refresh_token': hash_refresh_token_for_db(token)})
+    await uow.user_repository.update_by_id(id=user_id, values={'refresh_token_hash': hash_refresh_token_for_db(token)})
     response.set_cookie(
         key=REFRESH_COOKIE, 
         value=token,

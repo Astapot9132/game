@@ -2,6 +2,7 @@ import os
 
 import colorama
 import dotenv
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from backend.logger import GLOG
 
@@ -22,5 +23,4 @@ if PROD:
     
 else:
     GLOG.warning('Запуск сервера в тестовом режиме.')
-
 

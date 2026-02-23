@@ -12,12 +12,12 @@ from backend.logger import GLOG
 
 @asynccontextmanager
 async def test_lifespan(app: FastAPI):
-    container.wire(modules=["backend.app.api.auth"])
+    # container.wire(modules=["backend.src.app.api.auth"])
     GLOG.info("Контейнер настроен в тестовом режиме (wire)")
 
     yield
 
-    container.unwire()
+    # container.unwire()
     GLOG.info("Контейнер отключён (unwire)")
 
 @pytest.fixture
@@ -33,7 +33,8 @@ def test_app():
 # TestClient
 @pytest.fixture
 def client(test_app: FastAPI):
-    return TestClient(test_app)
+    with TestClient(test_app) as client:
+        yield client
 
 
 @pytest_asyncio.fixture(scope='function')

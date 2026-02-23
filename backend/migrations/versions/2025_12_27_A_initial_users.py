@@ -59,7 +59,7 @@ def upgrade() -> None:
     END
     """)
 
-    op.add_column('users', sa.Column('refresh_token', sa.String(length=64), nullable=True))
+    op.add_column('users', sa.Column('refresh_token_hash', sa.String(length=64), nullable=True))
     # ### end Alembic commands ###
 
 
