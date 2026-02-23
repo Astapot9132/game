@@ -66,7 +66,7 @@ async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow)):
 
     try:
         refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
-        await uow.user_repository.update_by_id(id=refresh_payload.user_id, values={'refresh_token': None}, commit=True)
+        await uow.user_repository.update_by_id(id=refresh_payload.user_id, values={'refresh_token_hash': None}, commit=True)
     except (InvalidTokenError, JWTError, ValidationError):
         pass
 
@@ -83,7 +83,7 @@ async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
 
     access_payload = decode_token(access_token, options={'verify_exp': False})
     refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
-    
+
     if access_payload.user_id != refresh_payload.user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
@@ -96,6 +96,7 @@ async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
     set_access_token(response, user_id)
     await set_refresh_token(response, user_id, uow=uow)
     await uow.commit()
+
     return response
 
 @auth_router.get("/csrf", dependencies=[])

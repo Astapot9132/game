@@ -1,8 +1,11 @@
 import sys
 from contextlib import asynccontextmanager
+
+import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
+from httpx import ASGITransport
 from starlette.testclient import TestClient
 
 from backend.di_container import container
@@ -31,9 +34,10 @@ def test_app():
 
 
 # TestClient
-@pytest.fixture
-def client(test_app: FastAPI):
-    with TestClient(test_app) as client:
+@pytest_asyncio.fixture
+async def client(test_app: FastAPI):
+    transport = ASGITransport(app=test_app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 

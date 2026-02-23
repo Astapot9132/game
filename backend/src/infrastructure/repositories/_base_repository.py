@@ -87,7 +87,6 @@ class SqlAlchemyRepository(ABC):
         executed_query = await self.session.execute(query_update)
         if commit:
             await self.session.commit()
-
         return executed_query.lastrowid
     
     async def delete_by_id(self, id: int, commit: bool = False):
