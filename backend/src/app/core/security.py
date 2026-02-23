@@ -3,6 +3,7 @@ import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from pprint import pprint
 from typing import Any
 
 import itsdangerous
@@ -40,6 +41,7 @@ def hash_password(password: str) -> str:
 
 def _create_token(user_id: int, expires_delta: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
+    print(expire)
     payload = {'user_id': user_id, 'exp': expire}
     return jwt.encode(payload, JWT_SECRET)
 

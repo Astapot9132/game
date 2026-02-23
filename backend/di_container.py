@@ -20,7 +20,7 @@ class Container(containers.DeclarativeContainer):
         create_async_engine,
         isolation_level='READ COMMITTED',
         url=ADB_URL,
-        echo=True,
+        # echo=True,
         pool_pre_ping=True,
     )
 
@@ -28,7 +28,7 @@ class Container(containers.DeclarativeContainer):
         create_async_engine,
         isolation_level='READ COMMITTED',
         url=SDB_URL,
-        echo=True,
+        # echo=True,
         pool_pre_ping=True,
     )
 
