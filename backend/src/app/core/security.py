@@ -1,26 +1,21 @@
 import hashlib
 import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Annotated, Optional, Any
+from typing import Any
 
 import itsdangerous
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from passlib.exc import InvalidTokenError
 from pydantic import ValidationError
-
-import secrets
-from fastapi import HTTPException, Request, status
 from starlette.responses import Response
 
-
-from backend.di_container import api_script_uow
-from backend.src.app.pydantic_models.auth import JWTScheme
-from backend.src.infrastructure.repositories.user_repository import UserRepository
 from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
+from backend.src.app.pydantic_models.auth import JWTScheme
 from backend.src.modules.shared.unit_of_work import UnitOfWork
 from cfg import REFRESH_TOKEN_PEPPER
 from logger import GLOG
