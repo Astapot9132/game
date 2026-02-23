@@ -134,16 +134,16 @@ async def test_refresh_right_path(client, test_uow, monkeypatch):
     assert response.status_code == HTTPStatus.OK
     user_in_db = await test_uow.user_repository.get_by_login(login)
     print(user_in_db.refresh_token_hash)
-    # assert user_in_db.refresh_token_hash
-    # mock_update = AsyncMock(return_value=None)
-    # monkeypatch.setattr(UserRepository, "update_by_id", mock_update)
-    # refresh_response = await client.post(f"/auth/refresh")
-    # assert refresh_response.status_code == HTTPStatus.OK
-    # assert mock_update.call_count == 1
-    # kwargs = mock_update.call_args.kwargs
-    # assert 'refresh_token_hash' in kwargs['values']
-    #
-    # user_in_db = await test_uow.user_repository.get_by_login(login)
+    assert user_in_db.refresh_token_hash
+    mock_update = AsyncMock(return_value=None)
+    monkeypatch.setattr(UserRepository, "update_by_id", mock_update)
+    refresh_response = await client.post(f"/auth/refresh")
+    assert refresh_response.status_code == HTTPStatus.OK
+    assert mock_update.call_count == 1
+    kwargs = mock_update.call_args.kwargs
+    assert 'refresh_token_hash' in kwargs['values']
+
+    user_in_db = await test_uow.user_repository.get_by_login(login)
 
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
 
