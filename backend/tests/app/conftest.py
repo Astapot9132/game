@@ -41,7 +41,7 @@ async def client(test_app: FastAPI):
         yield client
 
 
-@pytest_asyncio.fixture(scope='function')
+@pytest_asyncio.fixture(scope='function', loop_scope='function')
 async def test_uow():
     uow = container.script_uow()
     async with uow:
