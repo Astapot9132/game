@@ -13,7 +13,7 @@ from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from src.app.core.security import create_csrf_token, ACCESS_COOKIE, REFRESH_COOKIE
+from backend.src.app.core.security import create_csrf_token, ACCESS_COOKIE, REFRESH_COOKIE
 
 auth_router = APIRouter(prefix="/auth",)
 

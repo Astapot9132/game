@@ -17,8 +17,8 @@ from starlette.responses import Response
 from backend.cfg import JWT_SECRET, ACCESS_TOKEN_EXPIRE_SECONDS, REFRESH_TOKEN_EXPIRE_SECONDS, CSRF_SECRET
 from backend.src.app.pydantic_models.auth import JWTScheme
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from cfg import REFRESH_TOKEN_PEPPER
-from logger import GLOG
+from backend.cfg import REFRESH_TOKEN_PEPPER
+from backend.logger import GLOG
 
 pwd_context = CryptContext(schemes=['bcrypt'],
                            bcrypt__default_rounds=12,

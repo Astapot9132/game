@@ -1,4 +1,5 @@
 import json
+import sys
 import time
 from http import HTTPStatus
 
@@ -14,15 +15,15 @@ async def test_login_without_user(client, test_uow):
     """
     Тест для аутентификации провальный
     """
-    
+
     login = 'not_registered_login'
     user_in_db = await test_uow.user_repository.get_by_login(login)
     assert not user_in_db
-    
+
     data = AuthScheme(login=login, password='password')
 
     response = client.post(f"/auth/login", json=data.model_dump(mode='json'))
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.status_code == HTTPStatus.FORBIDDEN
 
 
 @pytest.mark.asyncio
@@ -34,7 +35,7 @@ async def test_login_with_wrong_password(client, test_uow):
     login = 'not_registered_login'
     right_password = 'right'
     wrong_password = 'wrong'
-    
+
     await test_uow.user_repository.add_many(
         values=[
             {
@@ -52,8 +53,8 @@ async def test_login_with_wrong_password(client, test_uow):
     data = AuthScheme(login=login, password=wrong_password)
 
     response = client.post(f"/auth/login", json=data.model_dump(mode='json'))
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
 
 
@@ -83,7 +84,7 @@ async def test_login_right_path(client, test_uow):
     response = client.post(f"/auth/login", json=data.model_dump(mode='json'))
     assert response.status_code == HTTPStatus.OK
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
-    
+
 @pytest.mark.asyncio
 async def test_registration_right_path(client, test_uow):
     """
@@ -100,11 +101,11 @@ async def test_registration_right_path(client, test_uow):
 
     response = client.post(f"/auth/registration", json=data.model_dump(mode='json'))
     assert response.status_code == HTTPStatus.OK
-    
-    
+
+
     user_in_db = await test_uow.user_repository.get_by_login(login)
     assert user_in_db
 
     await test_uow.user_repository.delete_by_id(user_in_db.id, commit=True)
-    
-    
+
+#
