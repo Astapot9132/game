@@ -9,16 +9,16 @@ const userStore = useUserStore();
     <div class="topnav__inner">
       <div class="topnav__left">
         <span class="topnav__brand">Game</span>
-        <nav class="topnav__links">
+        <!-- <nav class="topnav__links">
           <RouterLink class="topnav__link" to="/profile">Аккаунт</RouterLink>
-        </nav>
+        </nav> -->
       </div>
 
       <div class="topnav__right">
         <span v-if="userStore.isAuthenticated" class="topnav__nickname">
-          {{ userStore.profile?.login }}
+          <RouterLink class="topnav__link" to="/profile">Аккаунт</RouterLink>
         </span>
-        <RouterLink v-else class="topnav__link" to="/auth">Войти</RouterLink>
+          <RouterLink v-else class="topnav__link" to="/auth">Войти</RouterLink>
         <button
           v-if="userStore.isAuthenticated"
           type="button"
@@ -86,22 +86,29 @@ const userStore = useUserStore();
   display: flex;
   align-items: center;
   gap: 18%;
+  width: 20%;
 }
 
 .topnav__nickname {
   background: rgba(255, 255, 255, 0.12);
-  padding: 10% 15%;
-  border-radius: 999px;
+  padding: 4% 5%;
+  border-radius: 15%;
   font-weight: 600;
   cursor: pointer;
+  text-align: center;
+  width: 300px;
+  min-width: max-content;
+  white-space: nowrap;
 }
 
 .topnav__logout {
   border: none;
+  width: 300px;
+  font-weight: 600;
   border-radius: 15%;
   background: #f8fafc;
   color: #0b1220;
-  padding: 12% 18%;
+  padding: 4% 5%;
   cursor: pointer;
 }
 </style>
