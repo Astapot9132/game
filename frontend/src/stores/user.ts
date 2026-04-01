@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { api, logout_user } from '@/lib/api';
+import { api } from '@/lib/api';
+import { logout_user } from '@/lib/api-auth';
 import router from '@/router';
 
 

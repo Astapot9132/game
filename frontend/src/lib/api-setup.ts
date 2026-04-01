@@ -1,6 +1,7 @@
 import type { Pinia } from 'pinia';
 import { useUserStore } from '@/stores/user';
-import { api, refresh_user } from '@/lib/api';
+import { api } from '@/lib/api';
+import { refresh_user } from '@/lib/api-auth';
 
 let isRefreshing = false;
 let pendingRequests: ((tokenUpdated: boolean) => void)[] = [];

@@ -9,24 +9,20 @@ const userStore = useUserStore();
     <div class="topnav__inner">
       <div class="topnav__left">
         <span class="topnav__brand">Game</span>
-        <!-- <nav class="topnav__links">
-          <RouterLink class="topnav__link" to="/profile">Аккаунт</RouterLink>
-        </nav> -->
       </div>
 
       <div class="topnav__right">
-        <span v-if="userStore.isAuthenticated" class="topnav__nickname">
-          <RouterLink class="topnav__link" to="/profile">Аккаунт</RouterLink>
-        </span>
-          <RouterLink v-else class="topnav__link" to="/auth">Войти</RouterLink>
+          <RouterLink v-if="userStore.isAuthenticated" class="topnav__button" to="/profile">Аккаунт</RouterLink>
+          <RouterLink v-else class="topnav__button" to="/auth">Войти</RouterLink>
         <button
           v-if="userStore.isAuthenticated"
           type="button"
-          class="topnav__logout"
+          class="topnav__button"
           @click="userStore.logout"
         >
           Выйти
         </button>
+
       </div>
     </div>
   </header>
@@ -50,7 +46,7 @@ const userStore = useUserStore();
   height: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 10%;
+  padding: 0 5% 0% 6%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -67,48 +63,32 @@ const userStore = useUserStore();
   letter-spacing: 0.4px;
 }
 
-.topnav__links {
-  display: flex;
-  gap: 20%;
-}
 
-.topnav__link {
-  color: #e2e8f0;
-}
-
-.topnav__link.router-link-active {
-  color: #ffffff;
-  text-decoration: underline;
-  text-underline-offset: 6%;
-}
 
 .topnav__right {
   display: flex;
   align-items: center;
-  gap: 18%;
-  width: 20%;
+  gap: 12px;
+  /* width: auto; */
 }
 
-.topnav__nickname {
-  background: rgba(255, 255, 255, 0.12);
-  padding: 4% 5%;
-  border-radius: 15%;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  width: 300px;
-  min-width: max-content;
-  white-space: nowrap;
-}
-
-.topnav__logout {
+.topnav__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* box-sizing: border-box; */
   border: none;
-  width: 300px;
+  width: 120px;
+  /* flex: 0 0 120px; */
   font-weight: 600;
   border-radius: 15%;
   background: #f8fafc;
   color: #0b1220;
-  padding: 4% 5%;
+  padding: 11px 15px;
   cursor: pointer;
+  text-decoration: unset;
+  line-height: 1;
+  font: inherit;
+  font-weight: 600;
 }
 </style>

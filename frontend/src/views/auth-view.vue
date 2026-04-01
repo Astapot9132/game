@@ -1,8 +1,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { login_user, register_user } from '@/lib/api';
+import { login_user, register_user } from '@/lib/api-auth';
 import axios from 'axios';
 import router from '@/router';
 import {useUserStore} from '@/stores/user'
@@ -113,7 +112,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100dvh - 64px);
   padding: 16px;
 }
 
