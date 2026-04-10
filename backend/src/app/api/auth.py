@@ -1,30 +1,31 @@
 from http import HTTPStatus
-from pprint import pprint
 
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, HTTPException, Depends, Request
 from jose import JWTError
 from passlib.exc import InvalidTokenError
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
+from backend.di_container import container as c
 from backend.di_container import api_script_uow
-from backend.src.app.core.security import verify_password, hash_password, \
-    decode_token, set_access_token, set_refresh_token, set_csrf_cookie, require_auth, hash_refresh_token_for_db
+
 from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from backend.src.app.core.security import create_csrf_token, ACCESS_COOKIE, REFRESH_COOKIE
+from src.app.core.services.security import SecurityService
 
 auth_router = APIRouter(prefix="/auth",)
 
 
 @auth_router.post('/login')
 async def login(data: AuthScheme, 
-                uow: UnitOfWork = Depends(api_script_uow),):
+                uow: UnitOfWork = Depends(api_script_uow),
+                sec: SecurityService = Depends(c.security_service)):
     user = await uow.user_repository.get_by_login(data.login)
 
-    if not user or not verify_password(data.password, user.password_hash):
+    if not user or not sec.verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='Ошибка авторизации')
 
     assert user.id
@@ -32,16 +33,16 @@ async def login(data: AuthScheme,
     response = JSONResponse(
         status_code=HTTPStatus.OK, content={}
     )
-    set_access_token(response, user.id)
-    await set_refresh_token(response, user.id, uow=uow)
+    sec.set_access_token(response, user.id)
+    await sec.set_refresh_token(response, user.id, uow=uow)
     await uow.commit()
     return response
 
 @auth_router.post('/registration')
-async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow)):
+async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
     reg_model = PyUser(
         login=data.login,
-        password_hash=hash_password(data.password),
+        password_hash=sec.hash_password(data.password),
         user_type=UserTypeEnum.player,
         updated_by='Регистрация'
     )
@@ -57,58 +58,58 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
 
 
 @auth_router.post('/logout')
-async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow)):
+async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
-    response.delete_cookie(ACCESS_COOKIE)
-    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    response.delete_cookie(sec.ACCESS_COOKIE)
+    refresh_token = request.cookies.get(sec.REFRESH_COOKIE)
     if not refresh_token:
         return response
 
     try:
-        refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
+        refresh_payload = sec.decode_token(refresh_token, options={'verify_exp': False})
         await uow.user_repository.update_by_id(id=refresh_payload.user_id, values={'refresh_token_hash': None}, commit=True)
     except (InvalidTokenError, JWTError, ValidationError):
         pass
 
-    response.delete_cookie(REFRESH_COOKIE, path="/auth/refresh")
+    response.delete_cookie(sec.REFRESH_COOKIE, path="/auth/refresh")
 
     return response
 
 @auth_router.post('/refresh', dependencies=[])
-async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow),):
-    access_token = request.cookies.get(ACCESS_COOKIE)
-    refresh_token = request.cookies.get(REFRESH_COOKIE)
+async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
+    access_token = request.cookies.get(sec.ACCESS_COOKIE)
+    refresh_token = request.cookies.get(sec.REFRESH_COOKIE)
     if not access_token or not refresh_token:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
-    access_payload = decode_token(access_token, options={'verify_exp': False})
-    refresh_payload = decode_token(refresh_token, options={'verify_exp': False})
+    access_payload = sec.decode_token(access_token, options={'verify_exp': False})
+    refresh_payload = sec.decode_token(refresh_token, options={'verify_exp': False})
 
     if access_payload.user_id != refresh_payload.user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     user_id = refresh_payload.user_id
     user = await uow.user_repository.get_by_id(user_id)
-    if not user or user.refresh_token_hash != hash_refresh_token_for_db(refresh_token):
+    if not user or user.refresh_token_hash != sec.hash_refresh_token_for_db(refresh_token):
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail={"error": "not auth"})
 
     response = JSONResponse(status_code=HTTPStatus.OK, content={})
-    set_access_token(response, user_id)
-    await set_refresh_token(response, user_id, uow=uow)
+    sec.set_access_token(response, user_id)
+    await sec.set_refresh_token(response, user_id, uow=uow)
     await uow.commit()
 
     return response
 
 @auth_router.get("/csrf", dependencies=[])
-async def csrf():
-    token = create_csrf_token()
+async def csrf(sec: SecurityService = Depends(c.security_service)):
+    token = sec.create_csrf_token()
     response = JSONResponse(content={"csrf_token": token})
-    set_csrf_cookie(response, token)
+    sec.set_csrf_cookie(response, token)
     return response
 
 @auth_router.get('/me', dependencies=[])
 async def me(uow: UnitOfWork = Depends(api_script_uow),
-             user_payload: JWTScheme = Depends(require_auth)):
+             user_payload: JWTScheme = Depends(c.security_service.require_auth)):
     user = await uow.user_repository.get_by_id(user_payload.user_id)
     if user is None:
         raise HTTPException(

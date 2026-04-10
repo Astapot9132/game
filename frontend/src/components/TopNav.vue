@@ -9,9 +9,11 @@ const userStore = useUserStore();
     <div class="topnav__inner">
       <div class="topnav__left">
         <span class="topnav__brand">Game</span>
+        <RouterLink class="topnav__button" to="/battles">Битвы</RouterLink>
       </div>
 
       <div class="topnav__right">
+        
           <RouterLink v-if="userStore.isAuthenticated" class="topnav__button" to="/profile">Аккаунт</RouterLink>
           <RouterLink v-else class="topnav__button" to="/auth">Войти</RouterLink>
         <button
@@ -55,12 +57,15 @@ const userStore = useUserStore();
 .topnav__left {
   display: flex;
   align-items: center;
-  gap: 15%;
+  gap: 12px;
 }
 
 .topnav__brand {
   font-weight: 700;
   letter-spacing: 0.4px;
+  margin-right: 20px;
+  text-align: center;
+  min-width: 40%;
 }
 
 
@@ -69,10 +74,12 @@ const userStore = useUserStore();
   display: flex;
   align-items: center;
   gap: 12px;
+  
   /* width: auto; */
 }
 
 .topnav__button {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

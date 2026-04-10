@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 from backend.di_container import container
 from backend.src.app.api.auth import auth_router
 from logger import GLOG
-from src.app.core.security import require_csrf
+from src.app.core.services.security import require_csrf
 
 
 @asynccontextmanager

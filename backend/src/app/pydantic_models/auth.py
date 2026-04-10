@@ -1,9 +1,6 @@
 import datetime
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-
-from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 
 
 class AuthScheme(BaseModel):

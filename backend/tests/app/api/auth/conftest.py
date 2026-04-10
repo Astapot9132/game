@@ -1,6 +1,6 @@
 import pytest_asyncio
 
-from backend.src.app.core.security import hash_password
+from src.app.core.services.security import hash_password
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 
 
