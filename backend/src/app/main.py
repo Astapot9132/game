@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response, Request, HTTPException
+from fastapi import FastAPI, Response, Request, HTTPException, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
-from backend.di_container import container
+from backend.di_container import container as c
 from backend.src.app.api.auth import auth_router
 from logger import GLOG
-from src.app.core.services.security import require_csrf
+from src.app.core.services.security import SecurityService
 
 
 @asynccontextmanager
@@ -15,8 +15,8 @@ async def lifespan(app: FastAPI):
     # container.wire(modules=["backend.src.app.api.auth"])
     GLOG.info("Контейнер настроен (wire)")
     yield
-    await container.script_engine().dispose()
-    await container.admin_engine().dispose()
+    await c.script_engine().dispose()
+    await c.admin_engine().dispose()
     # container.unwire()
 
 
@@ -40,11 +40,11 @@ async def health_check():
 
 
 @app.middleware("http")
-async def csrf_middleware(request: Request, call_next) -> Response:
+async def csrf_middleware(request: Request, call_next, sec: SecurityService = Depends(c.security_service)) -> Response:
     # Проверяем, является ли запрос POST
     if request.method in ("POST", "DELETE", "PUT", "PATCH", ):
         try:
-            require_csrf(request)
+            sec.require_csrf(request)
         except HTTPException as e:
             GLOG.warning(f"CSRF validation failed for {request.url}: {e.detail}")
             return JSONResponse(

@@ -16,7 +16,6 @@ async def api_script_uow():
 
 
 class Container(containers.DeclarativeContainer):
-
     admin_engine = providers.Singleton(
         create_async_engine,
         isolation_level='READ COMMITTED',

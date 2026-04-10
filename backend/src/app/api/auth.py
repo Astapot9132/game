@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from dependency_injector.wiring import Provide
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, HTTPException, Depends, Request
 from jose import JWTError
 from passlib.exc import InvalidTokenError
@@ -14,6 +14,7 @@ from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
+from di_container import Container
 from src.app.core.services.security import SecurityService
 
 auth_router = APIRouter(prefix="/auth",)
@@ -107,9 +108,15 @@ async def csrf(sec: SecurityService = Depends(c.security_service)):
     sec.set_csrf_cookie(response, token)
     return response
 
+def require_auth(
+    request: Request,
+    sec: SecurityService = Depends(c.security_service),
+) -> JWTScheme:
+    return sec.require_auth(request)
+
 @auth_router.get('/me', dependencies=[])
 async def me(uow: UnitOfWork = Depends(api_script_uow),
-             user_payload: JWTScheme = Depends(c.security_service.require_auth)):
+             user_payload: JWTScheme = Depends(require_auth)):
     user = await uow.user_repository.get_by_id(user_payload.user_id)
     if user is None:
         raise HTTPException(
