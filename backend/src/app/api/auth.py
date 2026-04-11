@@ -7,23 +7,22 @@ from passlib.exc import InvalidTokenError
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
-from backend.di_container import container as c
-from backend.di_container import api_script_uow
+from backend.di_container import container as c, api_script_uow, require_auth
 
 from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
 from backend.src.infrastructure.pydantic_models.users import PyUser
 from backend.src.modules.shared.unit_of_work import UnitOfWork
-from di_container import Container
 from src.app.core.services.security import SecurityService
 
 auth_router = APIRouter(prefix="/auth",)
 
 
 @auth_router.post('/login')
+@inject
 async def login(data: AuthScheme, 
                 uow: UnitOfWork = Depends(api_script_uow),
-                sec: SecurityService = Depends(c.security_service)):
+                sec: SecurityService = Depends(Provide[c.security_service])):
     user = await uow.user_repository.get_by_login(data.login)
 
     if not user or not sec.verify_password(data.password, user.password_hash):
@@ -40,7 +39,8 @@ async def login(data: AuthScheme,
     return response
 
 @auth_router.post('/registration')
-async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
+@inject
+async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(Provide[c.security_service])):
     reg_model = PyUser(
         login=data.login,
         password_hash=sec.hash_password(data.password),
@@ -59,10 +59,11 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
 
 
 @auth_router.post('/logout')
-async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
+@inject
+async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(Provide[c.security_service])):
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
-    response.delete_cookie(sec.ACCESS_COOKIE)
-    refresh_token = request.cookies.get(sec.REFRESH_COOKIE)
+    response.delete_cookie(c.ACCESS_COOKIE)
+    refresh_token = request.cookies.get(c.REFRESH_COOKIE)
     if not refresh_token:
         return response
 
@@ -77,7 +78,8 @@ async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow), se
     return response
 
 @auth_router.post('/refresh', dependencies=[])
-async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(c.security_service)):
+@inject
+async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(Provide[c.security_service])):
     access_token = request.cookies.get(sec.ACCESS_COOKIE)
     refresh_token = request.cookies.get(sec.REFRESH_COOKIE)
     if not access_token or not refresh_token:
@@ -102,19 +104,16 @@ async def refresh(request: Request, uow: UnitOfWork = Depends(api_script_uow), s
     return response
 
 @auth_router.get("/csrf", dependencies=[])
-async def csrf(sec: SecurityService = Depends(c.security_service)):
+@inject
+async def csrf(sec: SecurityService = Depends(Provide[c.security_service])):
     token = sec.create_csrf_token()
     response = JSONResponse(content={"csrf_token": token})
     sec.set_csrf_cookie(response, token)
     return response
 
-def require_auth(
-    request: Request,
-    sec: SecurityService = Depends(c.security_service),
-) -> JWTScheme:
-    return sec.require_auth(request)
 
 @auth_router.get('/me', dependencies=[])
+@inject
 async def me(uow: UnitOfWork = Depends(api_script_uow),
              user_payload: JWTScheme = Depends(require_auth)):
     user = await uow.user_repository.get_by_id(user_payload.user_id)

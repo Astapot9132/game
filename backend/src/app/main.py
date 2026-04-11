@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from dependency_injector.wiring import Provide
 from fastapi import FastAPI, Response, Request, HTTPException, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
@@ -12,12 +13,12 @@ from src.app.core.services.security import SecurityService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # container.wire(modules=["backend.src.app.api.auth"])
+    c.wire(modules=["backend.src.app.api.auth"])
     GLOG.info("Контейнер настроен (wire)")
     yield
     await c.script_engine().dispose()
     await c.admin_engine().dispose()
-    # container.unwire()
+    c.unwire()
 
 
 
@@ -40,7 +41,7 @@ async def health_check():
 
 
 @app.middleware("http")
-async def csrf_middleware(request: Request, call_next, sec: SecurityService = Depends(c.security_service)) -> Response:
+async def csrf_middleware(request: Request, call_next, sec: SecurityService = Depends(Provide[c.security_service])) -> Response:
     # Проверяем, является ли запрос POST
     if request.method in ("POST", "DELETE", "PUT", "PATCH", ):
         try:

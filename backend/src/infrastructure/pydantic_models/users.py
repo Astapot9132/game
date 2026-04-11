@@ -18,12 +18,12 @@ class PyUser(BaseModel):
     user_type: UserTypeEnum
     updated_by: str
     refresh_token_hash: str | None = None
-
-    @classmethod
-    @field_validator("age")
-    def validate_age(cls, value: int | None) -> int | None:
-        if value is None:
-            return value
-        if not 0 < value < 100:
-            raise ValueError("Возраст должен быть между 1 и 99")
-        return value
+    #
+    # @classmethod
+    # @field_validator("age")
+    # def validate_age(cls, value: int | None) -> int | None:
+    #     if value is None:
+    #         return value
+    #     if not 0 < value < 100:
+    #         raise ValueError("Возраст должен быть между 1 и 99")
+    #     return value
