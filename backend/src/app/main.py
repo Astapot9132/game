@@ -41,11 +41,11 @@ async def health_check():
 
 
 @app.middleware("http")
-async def csrf_middleware(request: Request, call_next, sec: SecurityService = Depends(Provide[c.security_service])) -> Response:
+async def csrf_middleware(request: Request, call_next) -> Response:
     # Проверяем, является ли запрос POST
     if request.method in ("POST", "DELETE", "PUT", "PATCH", ):
         try:
-            sec.require_csrf(request)
+            c.security_service().require_csrf(request)
         except HTTPException as e:
             GLOG.warning(f"CSRF validation failed for {request.url}: {e.detail}")
             return JSONResponse(

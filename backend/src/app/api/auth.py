@@ -7,7 +7,7 @@ from passlib.exc import InvalidTokenError
 from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
-from backend.di_container import container as c, api_script_uow, require_auth
+from backend.di_container import Container as c, api_script_uow, require_auth
 
 from backend.src.app.pydantic_models.auth import AuthScheme, JWTScheme
 from backend.src.infrastructure.enums.users.enums import UserTypeEnum
@@ -62,8 +62,8 @@ async def registration(data: AuthScheme, uow: UnitOfWork = Depends(api_script_uo
 @inject
 async def logout(request: Request, uow: UnitOfWork = Depends(api_script_uow), sec: SecurityService = Depends(Provide[c.security_service])):
     response = JSONResponse(status_code=HTTPStatus.OK, content={'request': 'success'})
-    response.delete_cookie(c.ACCESS_COOKIE)
-    refresh_token = request.cookies.get(c.REFRESH_COOKIE)
+    response.delete_cookie(sec.ACCESS_COOKIE)
+    refresh_token = request.cookies.get(sec.REFRESH_COOKIE)
     if not refresh_token:
         return response
 
